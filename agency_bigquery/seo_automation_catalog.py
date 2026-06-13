@@ -20,6 +20,7 @@ CLIENTS_DIR = Path("docs/agent/clients")
 MAX_SUMMARY_CHARS = 360
 MAX_LIST_ITEMS = 12
 MAX_TIMELINE_ROWS = 5
+SCREAMING_FROG_MCP_DEPENDENCY = "Screaming Frog MCP for loaded crawl inspection, progress checks, crawl export, and approved bulk exports"
 FORBIDDEN_KEY_RE = re.compile(
     r"(raw|body|comment|update|email|conversation|credential|secret|token|password|private|cookie)",
     re.IGNORECASE,
@@ -85,6 +86,15 @@ def _safe_list(values: Any, *, max_items: int = MAX_LIST_ITEMS, max_chars: int =
         if cleaned:
             safe.append(cleaned)
     return safe
+
+
+def _workflow_dependencies(values: Any, *, workflow_doc: str, kind: str) -> list[str]:
+    dependencies = _safe_list(values)
+    text = f"{workflow_doc} {' '.join(dependencies)}".lower()
+    if kind == "mcp" and ("screaming frog" in text or "full-site-audit" in text):
+        if not any("screaming frog mcp" in dependency.lower() for dependency in dependencies):
+            dependencies.append(SCREAMING_FROG_MCP_DEPENDENCY)
+    return dependencies[:MAX_LIST_ITEMS]
 
 
 def _safe_dict(value: Any, *, max_items: int = MAX_LIST_ITEMS) -> dict[str, Any]:
@@ -168,7 +178,7 @@ def build_workflow_catalog_rows(
                 "scripts_json": _safe_list(skill.get("scripts")),
                 "validators_json": _safe_list(skill.get("validators")),
                 "api_dependencies_json": _safe_list(skill.get("api_dependencies")),
-                "mcp_dependencies_json": _safe_list(skill.get("mcp_dependencies")),
+                "mcp_dependencies_json": _workflow_dependencies(skill.get("mcp_dependencies"), workflow_doc=str(workflow_doc), kind="mcp"),
                 "write_gates_json": _safe_list(skill.get("write_gates")),
                 "proof_fields_json": _safe_list(skill.get("proof_block_fields")),
                 "active": True,
@@ -554,4 +564,3 @@ def agent_output_from_opportunities(
             "metrics": {"opportunities_reviewed": len(selected), "actions_suggested": len(actions)},
         }
     )
-
