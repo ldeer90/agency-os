@@ -50,6 +50,11 @@ def agent_logging_table_plans(config: BigQueryCostConfig) -> dict[str, LoggingTa
         "agent_actions": ("action_id",),
         "agent_approvals": ("approval_id",),
         "context_packs": ("context_id",),
+        "seo_workflow_catalog": ("skill_id", "workflow_id"),
+        "seo_client_memory_summaries": ("client_slug",),
+        "seo_workflow_run_summaries": ("run_id", "client_slug", "workflow_id"),
+        "seo_workflow_readiness": ("client_slug", "source_ref_hash"),
+        "seo_opportunity_queue": ("client_slug", "workflow_id", "source_ref_hash"),
     }
     return {
         table: LoggingTablePlan(logical_name=table, spec=specs[table], merge_keys=keys)

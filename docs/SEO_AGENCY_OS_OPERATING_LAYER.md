@@ -24,6 +24,22 @@ read approved summaries and marts
 
 Future agents are documented only: `performance_analyst`, `technical_seo`, `reporting_agent`, and `client_comms_drafting`.
 
+## SEO Automation Wrapper Layer
+
+SEO Automation remains the specialist execution/tooling repo. AgencyOS wraps it by syncing safe workflow metadata, client route summaries, and recent timeline summaries into operating tables.
+
+Wrapper agents:
+
+- `seo_workflow_router`: routes requests to the safest SEO Automation workflow.
+- `client_readiness`: checks whether each client has the client brief, sidecar, timeline, access routes, Drive routes, Monday route, and reporting/content prerequisites needed for common workflows.
+- `seo_opportunity_agent`: turns safe BigQuery and SEO Automation summaries into SEO workflow suggestions.
+- `reporting_prep_agent`: prepares draft-only monthly reporting actions and source-coverage warnings.
+- `seo_maintenance_agent`: recommends access, filing, SE Ranking, onboarding, and platform-reference cleanup actions.
+- `content_operations_agent`: coordinates content workflow readiness without drafting or publishing.
+- `technical_audit_agent`: prioritises technical audit evidence without running large crawls automatically.
+
+The wrapper layer stores sanitized structured extracts only. It does not store raw timeline markdown, raw Drive/Docs/Sheets content, raw Gmail/Outlook/Monday conversations, credentials, or long private notes.
+
 ## Safe Defaults
 
 Permissions live in `config/permissions.yaml`.
@@ -59,6 +75,31 @@ Inspect local agent visibility without running BigQuery:
 
 ```bash
 .venv/bin/python scripts/agent_activity_today.py
+```
+
+Sync the SEO Automation workflow catalog locally:
+
+```bash
+.venv/bin/python scripts/sync_seo_automation_catalog.py --dry-run
+```
+
+Sync sanitized SEO Automation client memory locally:
+
+```bash
+.venv/bin/python scripts/sync_seo_client_memory.py --dry-run
+```
+
+Run the SEO workflow router locally:
+
+```bash
+.venv/bin/python scripts/run_seo_workflow_router.py --dry-run
+```
+
+Run opportunity and reporting-prep wrappers locally:
+
+```bash
+.venv/bin/python scripts/run_seo_opportunity_agent.py --dry-run
+.venv/bin/python scripts/run_reporting_prep_agent.py --dry-run
 ```
 
 Local runner metadata is indexed in `data/agent_runs/index.json`, and in-progress markers live under `data/agent_runs/active/`. Runners accept `--automation-id` or `SEO_AGENCY_OS_AUTOMATION_ID` so scheduled workflows can be tied back to their automation identity in local output and the optional run log.
@@ -120,6 +161,11 @@ The operating layer defines:
 - `agency_memory.agent_actions`
 - `agency_memory.agent_approvals`
 - `agency_memory.context_packs`
+- `agency_memory.seo_workflow_catalog`
+- `agency_memory.seo_client_memory_summaries`
+- `agency_memory.seo_workflow_run_summaries`
+- `agency_reporting.seo_workflow_readiness`
+- `agency_reporting.seo_opportunity_queue`
 
 These are for internal operating memory only. They are not sources of truth for Monday, Gmail, Drive, Docs, or client reporting.
 
@@ -139,6 +185,11 @@ Then smoke-test the operating layer locally:
 ```bash
 .venv/bin/python scripts/run_promise_tracker.py
 .venv/bin/python scripts/run_daily_agency_brief.py
+.venv/bin/python scripts/sync_seo_automation_catalog.py --dry-run
+.venv/bin/python scripts/sync_seo_client_memory.py --dry-run
+.venv/bin/python scripts/run_seo_workflow_router.py --dry-run
+.venv/bin/python scripts/run_seo_opportunity_agent.py --dry-run
+.venv/bin/python scripts/run_reporting_prep_agent.py --dry-run
 ```
 
 Offline CI runs:

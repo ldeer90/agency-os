@@ -19,6 +19,7 @@ This workflow loads local agency-ops snapshots into BigQuery as a one-way memory
 | Monthly performance | SEO Reporting Platform report JSON | Reporting snapshot history |
 | Client roadmaps | SEO Automation roadmap workflow, client Drive roadmap folders, and staged summary-only roadmap JSONL | Structured agreed-work memory and monthly completion checks |
 | Client health assets | SEO Automation sidecars/briefs/timelines plus SEO Reporting config/report metadata | Presence/freshness checklist for the assets the agency brain expects |
+| SEO Automation workflow metadata | SEO Automation routing manifest, workflow docs, client sidecars, and sanitized timeline summaries | Workflow catalog, client readiness, and opportunity queues |
 | Google Drive filing | SEO Automation client briefs, sidecars, and Drive filing rules | Metadata-only route memory later; no raw Drive contents |
 
 BigQuery does not write back to monday.com in v1.
@@ -199,6 +200,18 @@ Staged summaries from the `comms-activity-digest` workflow load through:
 Use `--dry-run` first to validate summary JSONL without BigQuery writes. Successful loads append to `agency_memory.client_comms_weekly_summaries`, record `agency_memory.client_comms_digest_runs`, enforce 13-month retention, and rebuild `agency_reporting.client_comms_attention` and `agency_reporting.client_comms_history`.
 
 `client_comms_attention` is a current-state queue. It groups by client and thread reference, keeps only the latest thread state, and excludes rows whose latest `thread_status` is `resolved` or `fyi`. Use `client_comms_history` when you need the audit trail of weekly summaries and resolved conversations.
+
+## SEO Automation Workflow Memory
+
+SEO Automation remains the source of truth for workflow docs, client briefs, sidecars, timelines, access routes, and specialist scripts. AgencyOS stores only sanitized operating extracts:
+
+- `agency_memory.seo_workflow_catalog`: workflow family, source doc path, dependencies, validators, write gates, and proof fields.
+- `agency_memory.seo_client_memory_summaries`: client route/status metadata, deliverable metadata, and recent timeline summaries.
+- `agency_memory.seo_workflow_run_summaries`: future sanitized run outcomes from wrapped SEO Automation workflows.
+- `agency_reporting.seo_workflow_readiness`: client readiness/blocker queue.
+- `agency_reporting.seo_opportunity_queue`: suggested SEO Automation workflow opportunities.
+
+Do not load raw client timeline markdown, raw Drive/Docs/Sheets contents, raw Gmail/Outlook/Monday conversations, credentials, or long private notes into these tables.
 
 ## Client Roadmap Memory
 

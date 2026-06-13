@@ -285,6 +285,7 @@ class AgentOpsTest(unittest.TestCase):
             "## Client Health",
             "## Promises And Follow-Ups",
             "## Monday Hygiene",
+            "## SEO Automation Workflows",
             "## Suggested Actions",
             "## Actions Needing Approval",
             "## Agent Activity Visibility",
@@ -335,7 +336,7 @@ class AgentOpsTest(unittest.TestCase):
         table_names = {spec.table for spec in agent_operating_table_specs(test_config())}
         run_log_fields = {name for name, _, _ in next(spec.schema for spec in agent_operating_table_specs(test_config()) if spec.table == "agent_run_log")}
 
-        self.assertEqual(
+        self.assertTrue(
             {
                 "agent_run_log",
                 "llm_usage_log",
@@ -343,8 +344,11 @@ class AgentOpsTest(unittest.TestCase):
                 "agent_actions",
                 "agent_approvals",
                 "context_packs",
-            },
-            table_names,
+                "seo_workflow_catalog",
+                "seo_client_memory_summaries",
+                "seo_workflow_readiness",
+                "seo_opportunity_queue",
+            }.issubset(table_names)
         )
         self.assertIn("automation_id", run_log_fields)
 

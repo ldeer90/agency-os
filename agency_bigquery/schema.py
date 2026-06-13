@@ -938,6 +938,102 @@ LLM_USAGE_LOG_SCHEMA: list[SchemaTuple] = [
 ]
 
 
+SEO_WORKFLOW_CATALOG_SCHEMA: list[SchemaTuple] = [
+    ("synced_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("workflow_id", "STRING", "REQUIRED"),
+    ("family", "STRING", "REQUIRED"),
+    ("skill_id", "STRING", "REQUIRED"),
+    ("workflow_doc_path", "STRING", "NULLABLE"),
+    ("title", "STRING", "REQUIRED"),
+    ("commands_json", "JSON", "NULLABLE"),
+    ("required_inputs_json", "JSON", "NULLABLE"),
+    ("scripts_json", "JSON", "NULLABLE"),
+    ("validators_json", "JSON", "NULLABLE"),
+    ("api_dependencies_json", "JSON", "NULLABLE"),
+    ("mcp_dependencies_json", "JSON", "NULLABLE"),
+    ("write_gates_json", "JSON", "NULLABLE"),
+    ("proof_fields_json", "JSON", "NULLABLE"),
+    ("active", "BOOL", "REQUIRED"),
+    ("notes", "STRING", "NULLABLE"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+
+SEO_CLIENT_MEMORY_SUMMARIES_SCHEMA: list[SchemaTuple] = [
+    ("synced_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("domain", "STRING", "NULLABLE"),
+    ("site_type", "STRING", "NULLABLE"),
+    ("market_scope", "STRING", "NULLABLE"),
+    ("workflow_profile", "STRING", "NULLABLE"),
+    ("sidecar_path", "STRING", "NULLABLE"),
+    ("brief_path", "STRING", "NULLABLE"),
+    ("timeline_path", "STRING", "NULLABLE"),
+    ("sidecar_present", "BOOL", "REQUIRED"),
+    ("brief_present", "BOOL", "REQUIRED"),
+    ("timeline_present", "BOOL", "REQUIRED"),
+    ("ga4_property", "STRING", "NULLABLE"),
+    ("has_search_console_route", "BOOL", "REQUIRED"),
+    ("has_se_ranking", "BOOL", "REQUIRED"),
+    ("has_monday_route", "BOOL", "REQUIRED"),
+    ("has_drive_root", "BOOL", "REQUIRED"),
+    ("drive_routes_json", "JSON", "NULLABLE"),
+    ("monday_routes_json", "JSON", "NULLABLE"),
+    ("se_ranking_routes_json", "JSON", "NULLABLE"),
+    ("collection_count", "INT64", "REQUIRED"),
+    ("priority_pages_count", "INT64", "REQUIRED"),
+    ("deliverables_json", "JSON", "NULLABLE"),
+    ("reports_json", "JSON", "NULLABLE"),
+    ("recent_timeline_summary_json", "JSON", "NULLABLE"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+
+SEO_WORKFLOW_RUN_SUMMARIES_SCHEMA: list[SchemaTuple] = [
+    ("completed_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("workflow_id", "STRING", "REQUIRED"),
+    ("agent_id", "STRING", "REQUIRED"),
+    ("status", "STRING", "REQUIRED"),
+    ("summary", "STRING", "REQUIRED"),
+    ("outputs_json", "JSON", "NULLABLE"),
+    ("blockers_json", "JSON", "NULLABLE"),
+    ("next_actions_json", "JSON", "NULLABLE"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+
+REPORTING_SEO_WORKFLOW_READINESS_SCHEMA: list[SchemaTuple] = [
+    ("generated_at", "TIMESTAMP", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("readiness_status", "STRING", "REQUIRED"),
+    ("missing_inputs_json", "JSON", "NULLABLE"),
+    ("recommended_workflow_id", "STRING", "NULLABLE"),
+    ("recommended_agent_id", "STRING", "NULLABLE"),
+    ("evidence_json", "JSON", "REQUIRED"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+
+REPORTING_SEO_OPPORTUNITY_QUEUE_SCHEMA: list[SchemaTuple] = [
+    ("generated_at", "TIMESTAMP", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("opportunity_type", "STRING", "REQUIRED"),
+    ("workflow_id", "STRING", "REQUIRED"),
+    ("priority", "STRING", "REQUIRED"),
+    ("summary", "STRING", "REQUIRED"),
+    ("recommended_action", "STRING", "REQUIRED"),
+    ("evidence_json", "JSON", "REQUIRED"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+
 def control_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
     return [
         TableSpec(config.control_dataset, config.cost_checks_table, COST_CHECKS_SCHEMA),
@@ -957,6 +1053,11 @@ def agent_operating_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
         TableSpec(config.memory_dataset, "agent_actions", AGENT_ACTIONS_SCHEMA, partition_field="created_at", cluster_fields=("client_slug", "target_system", "status")),
         TableSpec(config.memory_dataset, "agent_approvals", AGENT_APPROVALS_SCHEMA, partition_field="decided_at", cluster_fields=("client_slug", "decision")),
         TableSpec(config.memory_dataset, "context_packs", CONTEXT_PACKS_SCHEMA, partition_field="created_at", cluster_fields=("agent_id", "client_slug")),
+        TableSpec(config.memory_dataset, "seo_workflow_catalog", SEO_WORKFLOW_CATALOG_SCHEMA, partition_field="synced_at", cluster_fields=("family", "workflow_id")),
+        TableSpec(config.memory_dataset, "seo_client_memory_summaries", SEO_CLIENT_MEMORY_SUMMARIES_SCHEMA, partition_field="synced_at", cluster_fields=("client_slug", "site_type")),
+        TableSpec(config.memory_dataset, "seo_workflow_run_summaries", SEO_WORKFLOW_RUN_SUMMARIES_SCHEMA, partition_field="completed_at", cluster_fields=("client_slug", "workflow_id", "status")),
+        TableSpec(config.reporting_dataset, "seo_workflow_readiness", REPORTING_SEO_WORKFLOW_READINESS_SCHEMA, partition_field="generated_at", cluster_fields=("client_slug", "readiness_status")),
+        TableSpec(config.reporting_dataset, "seo_opportunity_queue", REPORTING_SEO_OPPORTUNITY_QUEUE_SCHEMA, partition_field="generated_at", cluster_fields=("client_slug", "priority", "workflow_id")),
     ]
 
 

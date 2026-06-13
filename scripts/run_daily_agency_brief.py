@@ -33,6 +33,11 @@ from agency_bigquery.agent_ops import (  # noqa: E402
 from agency_bigquery.agent_logging import log_agent_output  # noqa: E402
 from agency_bigquery.capped_query_runner import CappedBigQueryRunner  # noqa: E402
 from agency_bigquery.cost_config import DEFAULT_CONFIG_PATH, BigQueryCostConfig  # noqa: E402
+from agency_bigquery.seo_automation_catalog import (  # noqa: E402
+    build_client_memory_summary_rows,
+    client_readiness_rows,
+    opportunity_rows_from_context,
+)
 
 
 SAFE_ENV_KEYS = {"GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT"}
@@ -168,6 +173,26 @@ FROM `{project}.{reporting}.client_comms_attention`
 ORDER BY week_start DESC, CASE severity WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, client_slug
 LIMIT {int(limit)}
 """,
+        "seo_readiness": f"""
+SELECT generated_at, client_slug, client_name, readiness_status, missing_inputs_json, recommended_workflow_id, recommended_agent_id, evidence_json
+FROM `{project}.{reporting}.seo_workflow_readiness`
+QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug, source_ref_hash ORDER BY generated_at DESC) = 1
+ORDER BY CASE readiness_status WHEN 'blocked' THEN 1 WHEN 'needs_attention' THEN 2 ELSE 3 END, client_slug
+LIMIT {int(limit)}
+""",
+        "seo_opportunities": f"""
+SELECT generated_at, client_slug, client_name, opportunity_type, workflow_id, priority, summary, recommended_action, evidence_json
+FROM `{project}.{reporting}.seo_opportunity_queue`
+QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug, workflow_id, source_ref_hash ORDER BY generated_at DESC) = 1
+ORDER BY CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, client_slug, workflow_id
+LIMIT {int(limit)}
+""",
+        "seo_workflow_summaries": f"""
+SELECT completed_at, client_slug, workflow_id, agent_id, status, summary
+FROM `{project}.{config.memory_dataset}.seo_workflow_run_summaries`
+ORDER BY completed_at DESC, client_slug, workflow_id
+LIMIT {int(limit)}
+""",
     }
     context: dict[str, list[dict]] = {}
     for key, sql in queries.items():
@@ -181,10 +206,16 @@ def local_context(args: argparse.Namespace) -> dict[str, list[dict]]:
     delivery_items = read_json(Path(args.delivery_json)) if args.delivery_json else []
     comms_file = latest_comms_staging_file()
     comms = read_jsonl(comms_file, args.limit) if comms_file else []
+    seo_client_rows = build_client_memory_summary_rows(run_id=args.run_id or "local-daily-brief")
+    seo_readiness = client_readiness_rows(seo_client_rows)
+    seo_opportunities = opportunity_rows_from_context(client_rows=seo_client_rows)
     return {
         "client_health": client_health,
         "delivery_items": delivery_items,
         "comms": comms,
+        "seo_readiness": seo_readiness,
+        "seo_opportunities": seo_opportunities,
+        "seo_workflow_summaries": [],
     }
 
 
@@ -384,10 +415,15 @@ def main() -> int:
             "agency_reporting.client_health_check",
             "agency_reporting.client_task_status",
             "agency_reporting.client_comms_attention",
+            "agency_reporting.seo_workflow_readiness",
+            "agency_reporting.seo_opportunity_queue",
+            "agency_memory.seo_workflow_run_summaries",
         ],
         sections={
             "client_health": context.get("client_health", []),
             "delivery_items": context.get("delivery_items", []),
+            "seo_readiness": context.get("seo_readiness", []),
+            "seo_opportunities": context.get("seo_opportunities", []),
             "promise_summary": promise_output.get("metrics", {}),
             "agent_summary": {"findings": len(output["findings"]), "actions": len(output["actions"])},
         },
@@ -453,6 +489,9 @@ def main() -> int:
         promise_output=promise_output,
         recent_findings=daily_findings,
         recent_actions=daily_actions,
+        seo_readiness=context.get("seo_readiness", []),
+        seo_opportunities=context.get("seo_opportunities", []),
+        seo_workflow_summaries=context.get("seo_workflow_summaries", []),
         activity=activity,
     )
     output["activity"] = activity

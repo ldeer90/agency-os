@@ -27,6 +27,11 @@ ALLOWED_BIGQUERY_WRITE_PURPOSES = {
     "agent_approvals",
     "context_packs",
     "llm_usage_log",
+    "seo_workflow_catalog",
+    "seo_client_memory_summaries",
+    "seo_workflow_run_summaries",
+    "seo_workflow_readiness",
+    "seo_opportunity_queue",
 }
 SECRET_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)

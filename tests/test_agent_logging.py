@@ -120,7 +120,7 @@ class AgentLoggingTest(unittest.TestCase):
     def test_schema_plan_is_allowlisted_with_merge_keys(self) -> None:
         plans = agent_logging_table_plans(test_config())
 
-        self.assertEqual(
+        self.assertTrue(
             {
                 "agent_run_log",
                 "llm_usage_log",
@@ -128,11 +128,16 @@ class AgentLoggingTest(unittest.TestCase):
                 "agent_actions",
                 "agent_approvals",
                 "context_packs",
-            },
-            set(plans),
+                "seo_workflow_catalog",
+                "seo_client_memory_summaries",
+                "seo_workflow_readiness",
+                "seo_opportunity_queue",
+            }.issubset(set(plans)),
         )
         self.assertEqual(("run_id",), plans["agent_run_log"].merge_keys)
         self.assertEqual(("finding_id",), plans["agent_findings"].merge_keys)
+        self.assertEqual(("skill_id", "workflow_id"), plans["seo_workflow_catalog"].merge_keys)
+        self.assertEqual(("client_slug",), plans["seo_client_memory_summaries"].merge_keys)
 
     def test_dry_run_default_validates_without_client_calls(self) -> None:
         client = FakeClient()

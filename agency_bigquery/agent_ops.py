@@ -73,6 +73,11 @@ class AgentPermissions:
         "agent_approvals",
         "context_packs",
         "llm_usage_log",
+        "seo_workflow_catalog",
+        "seo_client_memory_summaries",
+        "seo_workflow_run_summaries",
+        "seo_workflow_readiness",
+        "seo_opportunity_queue",
     )
 
 
@@ -846,10 +851,16 @@ def daily_brief_markdown(
     promise_output: dict[str, Any],
     recent_findings: list[dict[str, Any]] | None = None,
     recent_actions: list[dict[str, Any]] | None = None,
+    seo_readiness: list[dict[str, Any]] | None = None,
+    seo_opportunities: list[dict[str, Any]] | None = None,
+    seo_workflow_summaries: list[dict[str, Any]] | None = None,
     activity: dict[str, Any] | None = None,
 ) -> str:
     recent_findings = recent_findings or []
     recent_actions = recent_actions or []
+    seo_readiness = seo_readiness or []
+    seo_opportunities = seo_opportunities or []
+    seo_workflow_summaries = seo_workflow_summaries or []
     promise_findings = promise_output.get("findings", [])
     promise_actions = promise_output.get("actions", [])
     hygiene_findings = [finding for finding in recent_findings if finding.get("finding_type") == "monday_hygiene"]
@@ -905,6 +916,35 @@ def daily_brief_markdown(
             lines.append(f"- {client_slug or 'unmapped'}: {label} due {row.get('due_date') or 'no due date'} ({row.get('normalized_status') or row.get('delivery_status') or row.get('status') or 'unknown'}; {issues})")
     else:
         lines.append("- No Monday hygiene issues in the available context.")
+
+    lines.extend(["", "## SEO Automation Workflows"])
+    readiness_warnings = [
+        row for row in seo_readiness
+        if str(row.get("readiness_status") or "").lower() in {"blocked", "needs_attention", "missing", "partial"}
+    ]
+    if readiness_warnings:
+        for row in readiness_warnings[:12]:
+            missing = row.get("missing_inputs_json") or []
+            if isinstance(missing, str):
+                missing_text = missing
+            else:
+                missing_text = ", ".join(str(item) for item in missing[:8])
+            lines.append(
+                f"- {row.get('client_slug')}: {row.get('readiness_status')} for SEO Automation workflows"
+                f" ({missing_text or 'review required'})."
+            )
+    else:
+        lines.append("- No SEO Automation readiness blockers were included in this run.")
+    if seo_opportunities:
+        lines.append("- Recommended SEO workflow focus:")
+        for row in seo_opportunities[:10]:
+            lines.append(
+                f"  - {row.get('client_slug')}: {row.get('workflow_id')} - {row.get('summary') or row.get('recommended_action')}"
+            )
+    if seo_workflow_summaries:
+        lines.append("- Recent SEO Automation workflow summaries:")
+        for row in seo_workflow_summaries[:8]:
+            lines.append(f"  - {row.get('client_slug')}: {row.get('workflow_id')} {row.get('status')} - {row.get('summary')}")
 
     lines.extend(["", "## Suggested Actions"])
     suggested = [*promise_actions, *recent_actions]
