@@ -14,15 +14,35 @@ read approved summaries and marts
 → require approval before external action
 ```
 
+## Agent Hierarchy
+
+```text
+agency_supervisor
+→ seo_workflow_router
+→ specialist agents
+→ qa_guardrail
+→ approval/action queue
+```
+
+`agency_supervisor` is the SEO lead agent. It receives validated specialist findings, prioritises the daily or weekly operating view, and does not execute external actions.
+
+`seo_workflow_router` is the intake/router. It maps requests and operating signals to canonical SEO Automation workflows and the safest AgencyOS specialist.
+
+`qa_guardrail` is the validation stage for evidence, source boundaries, target systems, duplicate actions, and approval status.
+
+See `AGENT_POOL_REGISTRY.md` for the status of every agent.
+
 ## Current MVP Agents
 
-- `agency_supervisor`: creates the daily agency brief.
+- `agency_supervisor`: SEO lead agent and daily/weekly operating brief owner.
 - `promise_tracker`: detects likely commitments from summarized comms.
 - `delivery_manager`: documented role; delivery checks currently feed the daily brief.
 - `monday_hygiene`: identifies task metadata cleanup candidates without treating them as delivery failures.
 - `qa_guardrail`: validation rules used by the shared agent output contract.
+- `performance_analyst`: reviews GA4, Search Console, SE Ranking, and BigQuery performance marts.
+- `reporting_agent`: drafts client-safe reporting notes only.
 
-Future agents are documented only: `performance_analyst`, `technical_seo`, `reporting_agent`, and `client_comms_drafting`.
+Future or compatibility-only agents: `client_comms_drafting` remains future, and `technical_seo` is a retired alias for `technical_audit_agent`.
 
 ## SEO Automation Wrapper Layer
 
@@ -34,6 +54,12 @@ Wrapper agents:
 - `client_readiness`: checks whether each client has the client brief, sidecar, timeline, access routes, Drive routes, Monday route, and reporting/content prerequisites needed for common workflows.
 - `seo_opportunity_agent`: turns safe BigQuery and SEO Automation summaries into SEO workflow suggestions.
 - `reporting_prep_agent`: prepares draft-only monthly reporting actions and source-coverage warnings.
+- `reporting_agent`: drafts monthly or weekly reporting notes from validated performance, delivery, and roadmap evidence.
+- `performance_analyst`: interprets monthly GA4/GSC/SE Ranking performance marts and source coverage.
+- `search_console_opportunity_agent`: owns GSC opportunity mining and Search Console coverage warnings.
+- `se_ranking_hygiene_agent`: reviews SE Ranking route, access, capacity, stale tracking, duplicate, and AI tracker readiness signals.
+- `drive_filing_readback_agent`: checks Drive route/readback metadata without raw Drive content.
+- `reporting_portal_qa_agent`: reviews reporting portal snapshot, source-caveat, build, privacy, and browser-QA readiness.
 - `seo_maintenance_agent`: recommends access, filing, SE Ranking, onboarding, and platform-reference cleanup actions.
 - `content_operations_agent`: coordinates content workflow readiness without drafting or publishing.
 - `technical_audit_agent`: prioritises technical audit evidence without running large crawls automatically.
@@ -100,6 +126,15 @@ Run opportunity and reporting-prep wrappers locally:
 ```bash
 .venv/bin/python scripts/run_seo_opportunity_agent.py --dry-run
 .venv/bin/python scripts/run_reporting_prep_agent.py --dry-run
+```
+
+Run read-only specialist wrappers locally:
+
+```bash
+.venv/bin/python scripts/run_performance_analyst.py --dry-run
+.venv/bin/python scripts/run_drive_filing_readback_agent.py --dry-run
+.venv/bin/python scripts/run_se_ranking_hygiene_agent.py --dry-run
+.venv/bin/python scripts/run_reporting_portal_qa_agent.py --dry-run
 ```
 
 Local runner metadata is indexed in `data/agent_runs/index.json`, and in-progress markers live under `data/agent_runs/active/`. Runners accept `--automation-id` or `SEO_AGENCY_OS_AUTOMATION_ID` so scheduled workflows can be tied back to their automation identity in local output and the optional run log.
@@ -190,6 +225,10 @@ Then smoke-test the operating layer locally:
 .venv/bin/python scripts/run_seo_workflow_router.py --dry-run
 .venv/bin/python scripts/run_seo_opportunity_agent.py --dry-run
 .venv/bin/python scripts/run_reporting_prep_agent.py --dry-run
+.venv/bin/python scripts/run_performance_analyst.py --dry-run
+.venv/bin/python scripts/run_drive_filing_readback_agent.py --dry-run
+.venv/bin/python scripts/run_se_ranking_hygiene_agent.py --dry-run
+.venv/bin/python scripts/run_reporting_portal_qa_agent.py --dry-run
 ```
 
 Offline CI runs:
