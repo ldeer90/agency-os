@@ -110,6 +110,26 @@ class SeoAutomationCatalogTest(unittest.TestCase):
         self.assertEqual(rows[0]["title"], "Monthly Performance Comment")
         self.assertIn("GA4", rows[0]["api_dependencies_json"])
 
+    def test_workflow_catalog_adds_screaming_frog_mcp_dependency(self) -> None:
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_fake_seo_automation(root)
+            manifest_path = root / "docs/agent/routing-manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            skill = manifest["skills"]["ld-seo-audits-reporting"]
+            skill["workflow_docs"] = ["docs/agent/workflows/full-site-audit.md"]
+            skill["mcp_dependencies"] = ["seo-automation MCP"]
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            (root / "docs/agent/workflows/full-site-audit.md").write_text(
+                "# Full-Site Audit\n\nScreaming Frog is preferred for technical crawls.\n",
+                encoding="utf-8",
+            )
+
+            rows = build_workflow_catalog_rows(root=root, run_id="run-1", synced_at="2026-06-13T00:00:00+00:00")
+
+        dependencies = rows[0]["mcp_dependencies_json"]
+        self.assertTrue(any("Screaming Frog MCP" in dependency for dependency in dependencies))
+
     def test_client_memory_summaries_exclude_raw_private_fields_and_summarize_timeline(self) -> None:
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -192,4 +212,3 @@ class SeoAutomationCatalogTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

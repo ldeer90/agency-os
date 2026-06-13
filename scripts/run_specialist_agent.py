@@ -134,6 +134,17 @@ QUALIFY ROW_NUMBER() OVER (PARTITION BY r.client_slug ORDER BY cov.period_id DES
 ORDER BY r.client_slug
 LIMIT {int(limit)}
 """
+    elif agent_id == "technical_audit_agent":
+        filter_sql = _client_filter(client_slug)
+        sql = f"""
+SELECT client_slug, client_name, domain, workflow_profile, sidecar_path, timeline_path,
+       'agency_memory.seo_client_memory_summaries' AS source_table, source_ref_hash
+FROM `{project}.{memory}.seo_client_memory_summaries`
+{filter_sql}
+QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY synced_at DESC) = 1
+ORDER BY client_slug
+LIMIT {int(limit)}
+"""
     else:
         raise SystemExit(f"Unsupported agent: {agent_id}")
     _, rows = runner.run_query(sql, purpose=f"{agent_id}: read specialist context")

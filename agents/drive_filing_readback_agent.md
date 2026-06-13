@@ -15,6 +15,7 @@ Verify Drive route readiness and created-file readback metadata for reports, aud
 - `agency_memory.seo_client_memory_summaries`
 - `docs/DRIVE_FILING_GUIDE.md`
 - approved created-file metadata when a workflow provides it
+- approved Screaming Frog export metadata for audit ZIP/readback checks
 
 ## Outputs
 
@@ -26,6 +27,7 @@ Verify Drive route readiness and created-file readback metadata for reports, aud
 ## Delegates/Handoffs
 
 - Send report filing needs to `reporting_agent` or `reporting_portal_qa_agent`.
+- Send Screaming Frog export/readback checks to `technical_audit_agent` when the crawl evidence itself needs interpretation.
 - Send route setup gaps to `client_readiness` or `seo_maintenance_agent`.
 - Send ambiguous workflow selection to `seo_workflow_router`.
 
@@ -33,5 +35,6 @@ Verify Drive route readiness and created-file readback metadata for reports, aud
 
 - Do not create, move, rename, delete, share, or permission-change Drive files.
 - Do not read or store raw Google Docs, Sheets, Drive comments, or permission payloads.
+- Do not upload or file Screaming Frog raw export ZIPs without explicit approval.
 - Do not treat service-account folder listings as proof that a folder is empty.
 - Every filing recommendation must include evidence.

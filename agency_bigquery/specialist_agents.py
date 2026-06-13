@@ -60,6 +60,17 @@ SPECIALIST_AGENT_CONFIGS: dict[str, SpecialistAgentConfig] = {
             "agency_memory.seo_client_memory_summaries",
         ),
     ),
+    "technical_audit_agent": SpecialistAgentConfig(
+        agent_id="technical_audit_agent",
+        agent_name="Technical Audit Agent",
+        prompt_version="technical_audit_agent/v001",
+        task_type="technical_audit_evidence_review",
+        source_tables=(
+            "agency_memory.seo_client_memory_summaries",
+            "agency_reporting.client_health_check",
+            "agency_memory.seo_workflow_catalog",
+        ),
+    ),
 }
 
 
@@ -332,6 +343,46 @@ def reporting_portal_qa_output(rows: list[dict[str, Any]], *, run_id: str, creat
     )
 
 
+def technical_audit_output(rows: list[dict[str, Any]], *, run_id: str, created_at: str) -> dict[str, Any]:
+    findings: list[dict[str, Any]] = []
+    actions: list[dict[str, Any]] = []
+    for row in rows:
+        client = _client_name(row)
+        has_domain = bool(row.get("domain") or row.get("start_url") or row.get("site_url"))
+        if not has_domain:
+            continue
+        _append_finding_action(
+            findings=findings,
+            actions=actions,
+            run_id=run_id,
+            agent_id="technical_audit_agent",
+            created_at=created_at,
+            row=row,
+            finding_type="technical_crawl_evidence_review",
+            severity="info",
+            summary=f"{client} is eligible for Screaming Frog technical audit evidence review.",
+            recommended_action="Check for an existing Screaming Frog crawl/export first; use the Screaming Frog MCP only for loaded crawl inspection, progress checks, and approved exports before considering a new crawl.",
+            evidence=_evidence(
+                row,
+                row.get("source_table") or "agency_memory.seo_client_memory_summaries",
+                {"screaming_frog_mcp_role": "inspect loaded crawls, check progress, export approved crawl data"},
+            ),
+            priority="low",
+            confidence_score=0.62,
+        )
+    return validate_agent_output(
+        {
+            "run_id": run_id,
+            "agent_id": "technical_audit_agent",
+            "created_at": created_at,
+            "summary": f"Reviewed {len(rows)} technical audit route row(s).",
+            "findings": findings,
+            "actions": actions,
+            "metrics": {"rows_reviewed": len(rows), "findings": len(findings), "actions": len(actions)},
+        }
+    )
+
+
 def local_client_rows(
     *,
     run_id: str,
@@ -354,6 +405,8 @@ def output_for_agent(agent_id: str, rows: list[dict[str, Any]], *, run_id: str, 
         return se_ranking_hygiene_output(rows, run_id=run_id, created_at=created_at)
     if agent_id == "reporting_portal_qa_agent":
         return reporting_portal_qa_output(rows, run_id=run_id, created_at=created_at)
+    if agent_id == "technical_audit_agent":
+        return technical_audit_output(rows, run_id=run_id, created_at=created_at)
     raise ValueError(f"unsupported specialist agent: {agent_id}")
 
 

@@ -40,7 +40,7 @@ agency_supervisor
 | `delivery_manager` | docs-only-active | Reviews task and roadmap delivery risk | planned runner |
 | `seo_maintenance_agent` | docs-only-active | Recommends access, filing, and platform cleanup | planned runner |
 | `content_operations_agent` | docs-only-active | Coordinates content workflow readiness | planned runner |
-| `technical_audit_agent` | docs-only-active | Prioritises technical audit evidence | planned runner |
+| `technical_audit_agent` | active-runner | Prioritises Screaming Frog MCP/CLI, SE Ranking, Firecrawl, and crawl evidence | `scripts/run_technical_audit_agent.py` |
 | `reporting_agent` | docs-only-active | Drafts client-safe reporting notes | planned runner |
 | `client_comms_drafting` | future | Draft-only client comms after approval flow matures | none |
 | `technical_seo` | future | Retired compatibility alias for `technical_audit_agent` | none |
@@ -52,10 +52,12 @@ agency_supervisor
 - Monday remains the source of truth for task state.
 - Google Drive remains the source of truth for files and folder contents.
 - GA4, Search Console, and SE Ranking live APIs are read-only sources when a workflow explicitly approves live verification.
+- Screaming Frog MCP is a technical-audit evidence interface for loaded crawl inspection, progress checks, crawl export, and explicitly approved bulk exports.
 
 ## Approval Rules
 
 - Every specialist recommendation must include evidence.
 - External actions stay `needs_review` until explicit approval exists.
 - No agent may send email, create or update Monday tasks, move/share/delete Drive files, publish content, deploy reports, or change SE Ranking without explicit user approval.
-- Raw Drive/Docs/Sheets contents, Gmail/Outlook bodies, Monday updates/comments, credential values, and raw keyword/export dumps must not be stored in BigQuery.
+- No agent may start, resume, pause, clear, export, upload, or bulk-export Screaming Frog crawl/page content without explicit approval for the site and scope.
+- Raw Drive/Docs/Sheets contents, Gmail/Outlook bodies, Monday updates/comments, credential values, raw keyword/export dumps, raw Screaming Frog exports, raw HTML, and visible page text must not be stored in BigQuery.

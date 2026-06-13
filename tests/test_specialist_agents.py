@@ -8,6 +8,7 @@ from agency_bigquery.specialist_agents import (
     performance_analyst_output,
     reporting_portal_qa_output,
     se_ranking_hygiene_output,
+    technical_audit_output,
 )
 
 
@@ -87,6 +88,24 @@ class SpecialistAgentsTest(unittest.TestCase):
         )
         self.assertEqual(output["agent_id"], "reporting_portal_qa_agent")
         self.assertEqual(output["findings"][0]["finding_type"], "reporting_portal_qa_gap")
+
+    def test_technical_audit_output_routes_screaming_frog_review(self) -> None:
+        output = technical_audit_output(
+            [
+                {
+                    "client_slug": "travelkon",
+                    "client_name": "TravelKon",
+                    "domain": "travelkon.com.au",
+                    "source_ref_hash": "abc",
+                }
+            ],
+            run_id="run-1",
+            created_at="2026-06-13T00:00:00+00:00",
+        )
+        self.assertEqual(output["agent_id"], "technical_audit_agent")
+        self.assertEqual(output["findings"][0]["finding_type"], "technical_crawl_evidence_review")
+        self.assertIn("Screaming Frog MCP", output["actions"][0]["recommended_action"])
+        self.assertEqual(output["actions"][0]["target_system"], "codex")
 
     def test_output_for_agent_rejects_unknown_agent(self) -> None:
         with self.assertRaises(ValueError):

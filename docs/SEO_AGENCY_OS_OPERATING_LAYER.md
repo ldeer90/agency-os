@@ -62,7 +62,7 @@ Wrapper agents:
 - `reporting_portal_qa_agent`: reviews reporting portal snapshot, source-caveat, build, privacy, and browser-QA readiness.
 - `seo_maintenance_agent`: recommends access, filing, SE Ranking, onboarding, and platform-reference cleanup actions.
 - `content_operations_agent`: coordinates content workflow readiness without drafting or publishing.
-- `technical_audit_agent`: prioritises technical audit evidence without running large crawls automatically.
+- `technical_audit_agent`: prioritises Screaming Frog MCP/CLI, SE Ranking, Firecrawl, and crawl evidence without running large crawls automatically.
 
 The wrapper layer stores sanitized structured extracts only. It does not store raw timeline markdown, raw Drive/Docs/Sheets content, raw Gmail/Outlook/Monday conversations, credentials, or long private notes.
 
@@ -77,6 +77,7 @@ The MVP defaults to:
 - no Monday writes
 - no Drive writes or sharing
 - no external publishing
+- no automatic Screaming Frog crawl control, raw export upload, or bulk page-content export
 - BigQuery logging only by explicit flag
 - approval required for external actions
 - production BigQuery logging requires BigQuery-backed context unless an explicit local-test override is passed
@@ -135,6 +136,7 @@ Run read-only specialist wrappers locally:
 .venv/bin/python scripts/run_drive_filing_readback_agent.py --dry-run
 .venv/bin/python scripts/run_se_ranking_hygiene_agent.py --dry-run
 .venv/bin/python scripts/run_reporting_portal_qa_agent.py --dry-run
+.venv/bin/python scripts/run_technical_audit_agent.py --dry-run
 ```
 
 Local runner metadata is indexed in `data/agent_runs/index.json`, and in-progress markers live under `data/agent_runs/active/`. Runners accept `--automation-id` or `SEO_AGENCY_OS_AUTOMATION_ID` so scheduled workflows can be tied back to their automation identity in local output and the optional run log.
@@ -229,6 +231,7 @@ Then smoke-test the operating layer locally:
 .venv/bin/python scripts/run_drive_filing_readback_agent.py --dry-run
 .venv/bin/python scripts/run_se_ranking_hygiene_agent.py --dry-run
 .venv/bin/python scripts/run_reporting_portal_qa_agent.py --dry-run
+.venv/bin/python scripts/run_technical_audit_agent.py --dry-run
 ```
 
 Offline CI runs:
