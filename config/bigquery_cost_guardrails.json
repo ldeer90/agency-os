@@ -1,0 +1,29 @@
+{
+  "project_id": "seo-agency-work",
+  "default_location": "australia-southeast1",
+  "pricing_mode": "on_demand",
+  "currency": "AUD",
+  "monthly_budget_amount": 10,
+  "normal_query_cap_bytes": 1073741824,
+  "admin_override_query_cap_bytes": 10737418240,
+  "dry_run_required": true,
+  "control_dataset": "agency_control",
+  "staging_dataset": "agency_staging",
+  "memory_dataset": "agency_memory",
+  "reporting_dataset": "agency_reporting",
+  "cost_checks_table": "cost_checks",
+  "staging_table_expiry_hours": 72,
+  "budget_alert_thresholds": [
+    0.5,
+    0.8,
+    1.0
+  ],
+  "raw_dataset_policy": {
+    "default_query_allowed": false,
+    "allowed_for_purpose_prefixes": [
+      "debug:",
+      "ingestion:",
+      "qa:"
+    ]
+  }
+}

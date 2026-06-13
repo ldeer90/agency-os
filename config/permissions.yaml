@@ -1,0 +1,20 @@
+# SEO Agency OS operating-layer permissions.
+# Keep this file conservative. Agent runners should default to dry-run and
+# require explicit human approval before any external write.
+
+dry_run_default: true
+allow_email_send: false
+allow_email_draft_create: false
+allow_monday_write: false
+allow_drive_write: false
+allow_drive_share: false
+allow_external_publish: false
+allow_bigquery_logging: true
+require_approval_for_external_actions: true
+allowed_bigquery_write_purposes:
+  - agent_run_log
+  - agent_findings
+  - agent_actions
+  - agent_approvals
+  - context_packs
+  - llm_usage_log
