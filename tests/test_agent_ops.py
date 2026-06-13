@@ -29,7 +29,7 @@ from agency_bigquery.agent_ops import (
 )
 from agency_bigquery.agency_ops_ingestion import monthly_report_snapshot_status
 from agency_bigquery.cost_config import BigQueryCostConfig
-from agency_bigquery.schema import agent_operating_table_specs, plan_agent_operating_tables
+from agency_bigquery.schema import agent_operating_table_specs, agency_ops_table_specs, plan_agent_operating_tables
 
 
 def test_config() -> BigQueryCostConfig:
@@ -168,6 +168,25 @@ class AgentOpsTest(unittest.TestCase):
 
         self.assertNotIn("raw_message", context_pack["sections_json"])
         self.assertEqual(context_pack["sections_json"]["summary"], "safe")
+
+    def test_crawl_memory_table_specs_are_partitioned_and_sanitised(self) -> None:
+        specs = {(spec.dataset, spec.table): spec for spec in agency_ops_table_specs(test_config())}
+
+        runs = specs[("agency_memory", "client_crawl_runs")]
+        urls = specs[("agency_memory", "client_crawl_url_snapshots")]
+        latest = specs[("agency_reporting", "client_crawl_latest")]
+        comparison = specs[("agency_reporting", "client_crawl_comparison")]
+
+        self.assertEqual(runs.partition_field, "crawl_date")
+        self.assertEqual(urls.partition_field, "crawl_date")
+        self.assertEqual(latest.partition_field, "crawl_date")
+        self.assertEqual(comparison.partition_field, "current_crawl_date")
+        self.assertIn("retention_expires_on", runs.schema_by_name)
+        self.assertIn("retention_expires_on", urls.schema_by_name)
+        self.assertNotIn("raw_html", urls.schema_by_name)
+        self.assertNotIn("visible_text", urls.schema_by_name)
+        self.assertEqual(runs.cluster_fields, ("client_slug", "crawl_trigger", "crawler"))
+        self.assertEqual(urls.cluster_fields, ("client_slug", "url_hash"))
 
     def test_external_actions_require_approval_and_valid_status(self) -> None:
         evidence = [{"source": "agency_reporting.client_task_status", "item_id": "123"}]

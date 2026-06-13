@@ -41,6 +41,7 @@ See `AGENT_POOL_REGISTRY.md` for the status of every agent.
 - `qa_guardrail`: validation rules used by the shared agent output contract.
 - `performance_analyst`: reviews GA4, Search Console, SE Ranking, and BigQuery performance marts.
 - `reporting_agent`: drafts client-safe reporting notes only.
+- `technical_audit_agent`: owns monthly and post-task crawl interpretation from Screaming Frog MCP/CLI summaries.
 
 Future or compatibility-only agents: `client_comms_drafting` remains future, and `technical_seo` is a retired alias for `technical_audit_agent`.
 
@@ -62,7 +63,7 @@ Wrapper agents:
 - `reporting_portal_qa_agent`: reviews reporting portal snapshot, source-caveat, build, privacy, and browser-QA readiness.
 - `seo_maintenance_agent`: recommends access, filing, SE Ranking, onboarding, and platform-reference cleanup actions.
 - `content_operations_agent`: coordinates content workflow readiness without drafting or publishing.
-- `technical_audit_agent`: prioritises Screaming Frog MCP/CLI, SE Ranking, Firecrawl, and crawl evidence without running large crawls automatically.
+- `technical_audit_agent`: prioritises Screaming Frog MCP/CLI, SE Ranking, Firecrawl, monthly baseline crawls, and post-task crawl evidence without running crawls automatically.
 
 The wrapper layer stores sanitized structured extracts only. It does not store raw timeline markdown, raw Drive/Docs/Sheets content, raw Gmail/Outlook/Monday conversations, credentials, or long private notes.
 
@@ -78,6 +79,7 @@ The MVP defaults to:
 - no Drive writes or sharing
 - no external publishing
 - no automatic Screaming Frog crawl control, raw export upload, or bulk page-content export
+- no automatic monthly or post-task crawl execution without approved client/site/scope
 - BigQuery logging only by explicit flag
 - approval required for external actions
 - production BigQuery logging requires BigQuery-backed context unless an explicit local-test override is passed
@@ -157,6 +159,14 @@ Create or verify the approved operating tables only after the plan has been revi
   --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env"
 ```
 
+Plan the crawl-memory tables for monthly and post-task technical comparisons:
+
+```bash
+.venv/bin/python scripts/manage_crawl_memory_tables.py \
+  --plan \
+  --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env"
+```
+
 Run against BigQuery reporting marts only when credentials are loaded and the task calls for live warehouse reads:
 
 ```bash
@@ -201,8 +211,12 @@ The operating layer defines:
 - `agency_memory.seo_workflow_catalog`
 - `agency_memory.seo_client_memory_summaries`
 - `agency_memory.seo_workflow_run_summaries`
+- `agency_memory.client_crawl_runs`
+- `agency_memory.client_crawl_url_snapshots`
 - `agency_reporting.seo_workflow_readiness`
 - `agency_reporting.seo_opportunity_queue`
+- `agency_reporting.client_crawl_latest`
+- `agency_reporting.client_crawl_comparison`
 
 These are for internal operating memory only. They are not sources of truth for Monday, Gmail, Drive, Docs, or client reporting.
 

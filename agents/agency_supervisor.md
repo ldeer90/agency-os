@@ -16,6 +16,8 @@ Laurence. This is the SEO lead agent for the local AgencyOS layer.
 - `agency_reporting.client_comms_attention`
 - `agency_reporting.seo_workflow_readiness`
 - `agency_reporting.seo_opportunity_queue`
+- `agency_reporting.client_crawl_latest`
+- `agency_reporting.client_crawl_comparison`
 - `agency_memory.agent_findings`
 - `agency_memory.agent_actions`
 - `agency_memory.context_packs`
@@ -30,7 +32,7 @@ Laurence. This is the SEO lead agent for the local AgencyOS layer.
 ## Delegates/Handoffs
 
 - Send workflow routing questions to `seo_workflow_router`.
-- Use specialist findings from performance, reporting, Search Console, SE Ranking, Drive filing, content, technical, promise, delivery, and Monday hygiene agents.
+- Use specialist findings from performance, reporting, Search Console, SE Ranking, Drive filing, content, technical crawl/audit, promise, delivery, and Monday hygiene agents.
 - Send every specialist finding/action through `qa_guardrail` before including it in briefs or action queues.
 - Queue approved next steps for human review; do not execute external actions.
 

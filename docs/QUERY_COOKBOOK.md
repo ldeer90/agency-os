@@ -146,6 +146,37 @@ Check whether agreed roadmap work was completed for a month:
 
 Roadmap memory stores structured agreed-work summaries only. Do not use BigQuery to retrieve raw Drive roadmap sheet/doc bodies.
 
+## Crawl Memory
+
+Latest approved crawl summary by client:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: latest crawl summaries by client" \
+  --limit-preview 50 \
+  --sql "SELECT crawl_date, client_slug, client_name, crawl_trigger, crawler, crawl_status, pages_crawled, indexable_html_urls, status_4xx_urls, status_5xx_urls, missing_title_urls, missing_meta_description_urls, missing_h1_urls, canonical_issue_urls, low_content_urls FROM \`seo-agency-work.agency_reporting.client_crawl_latest\` ORDER BY crawl_date DESC, client_slug LIMIT 50"
+```
+
+Post-task or monthly crawl deltas for one client:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: crawl comparison for little-shop-of-happiness" \
+  --limit-preview 20 \
+  --sql "SELECT current_crawl_date, previous_crawl_date, crawl_trigger, pages_crawled_delta, indexable_html_urls_delta, status_4xx_urls_delta, status_5xx_urls_delta, missing_title_urls_delta, missing_meta_description_urls_delta, missing_h1_urls_delta, canonical_issue_urls_delta, low_content_urls_delta, comparison_status FROM \`seo-agency-work.agency_reporting.client_crawl_comparison\` WHERE client_slug = 'little-shop-of-happiness' ORDER BY current_crawl_date DESC LIMIT 20"
+```
+
+Expired crawl-memory rows that need cleanup:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent check: crawl memory retention expiry counts" \
+  --limit-preview 10 \
+  --sql "SELECT 'client_crawl_runs' AS table_name, COUNT(*) AS expired_rows FROM \`seo-agency-work.agency_memory.client_crawl_runs\` WHERE retention_expires_on < CURRENT_DATE() UNION ALL SELECT 'client_crawl_url_snapshots' AS table_name, COUNT(*) AS expired_rows FROM \`seo-agency-work.agency_memory.client_crawl_url_snapshots\` WHERE retention_expires_on < CURRENT_DATE()"
+```
+
+Crawl memory stores sanitized technical facts only. Do not query BigQuery for raw crawl exports, raw HTML, visible text, scraped page bodies, screenshots, cookies, or request/response secrets.
+
 ## Client Health Check
 
 Latest active reporting-client setup health across the agency brain:

@@ -28,12 +28,13 @@ Routes requests and operating signals to the safest matching SEO Automation work
 - Route GSC opportunity mining to `search_console_opportunity_agent`.
 - Route SE Ranking capacity, duplicates, stale tracking, and AI tracker checks to `se_ranking_hygiene_agent`.
 - Route Drive destination/readback checks to `drive_filing_readback_agent`.
-- Route technical crawl/audit interpretation and Screaming Frog MCP loaded-crawl/export requests to `technical_audit_agent`.
+- Route monthly crawl baseline planning, post-task verification crawl planning, technical crawl/audit interpretation, and Screaming Frog MCP loaded-crawl/export requests to `technical_audit_agent`.
 - Route content readiness to `content_operations_agent`.
 
 ## Safety
 
 - Do not run SEO Automation workflows directly.
 - Do not create Monday tasks, send emails, move Drive files, publish content, or change SE Ranking.
+- Do not start Screaming Frog crawls or export raw crawl data directly.
 - Recommend dry-run/research mode first.
 - Every route needs evidence from the catalog and client memory summary.

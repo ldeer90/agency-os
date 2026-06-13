@@ -20,6 +20,7 @@ This workflow loads local agency-ops snapshots into BigQuery as a one-way memory
 | Client roadmaps | SEO Automation roadmap workflow, client Drive roadmap folders, and staged summary-only roadmap JSONL | Structured agreed-work memory and monthly completion checks |
 | Client health assets | SEO Automation sidecars/briefs/timelines plus SEO Reporting config/report metadata | Presence/freshness checklist for the assets the agency brain expects |
 | SEO Automation workflow metadata | SEO Automation routing manifest, workflow docs, client sidecars, and sanitized timeline summaries | Workflow catalog, client readiness, and opportunity queues |
+| Technical crawl memory | Screaming Frog MCP/CLI summary exports, approved crawl manifests, and technical audit sidecars | 18-month crawl baseline, post-task comparison evidence, and issue-count reporting |
 | Google Drive filing | SEO Automation client briefs, sidecars, and Drive filing rules | Metadata-only route memory later; no raw Drive contents |
 
 BigQuery does not write back to monday.com in v1.
@@ -114,6 +115,8 @@ Memory:
 - `agency_memory.client_roadmap_sources`
 - `agency_memory.client_roadmap_items`
 - `agency_memory.client_health_assets`
+- `agency_memory.client_crawl_runs`
+- `agency_memory.client_crawl_url_snapshots`
 
 Reporting:
 
@@ -128,6 +131,8 @@ Reporting:
 - `agency_reporting.client_roadmap_current`
 - `agency_reporting.client_roadmap_monthly_completion`
 - `agency_reporting.client_health_check`
+- `agency_reporting.client_crawl_latest`
+- `agency_reporting.client_crawl_comparison`
 - `agency_reporting.reporting_readiness`
 - `agency_reporting.ops_drift_summary`
 
@@ -212,6 +217,28 @@ SEO Automation remains the source of truth for workflow docs, client briefs, sid
 - `agency_reporting.seo_opportunity_queue`: suggested SEO Automation workflow opportunities.
 
 Do not load raw client timeline markdown, raw Drive/Docs/Sheets contents, raw Gmail/Outlook/Monday conversations, credentials, or long private notes into these tables.
+
+## Technical Crawl Memory
+
+Technical crawl memory keeps a rolling 18-month history of approved Screaming Frog crawl summaries so AgencyOS can compare current technical state against the previous monthly baseline or nearest relevant post-task verification crawl.
+
+Cadence:
+
+- Run one monthly baseline crawl for each active recurring SEO/reporting client when the client route and crawl scope are approved.
+- Run a post-task verification crawl after client-scoped SEO tasks when the task can change crawlable site state.
+- Match post-task scope to the work: affected URLs or section for small content/metadata work, and full-site crawl only for sitewide technical, migration, navigation, template, or deploy work.
+- Store `retention_expires_on` as 18 months after `crawl_date`; retention cleanup must remove expired rows from both crawl memory tables.
+
+BigQuery stores sanitized technical facts only:
+
+- `agency_memory.client_crawl_runs`: one row per crawl run with trigger, scope, counts, issue totals, source manifest metadata, and retention date.
+- `agency_memory.client_crawl_url_snapshots`: one row per crawled URL with normalized technical fields, issue flags, hashed source reference, and retention date.
+- `agency_reporting.client_crawl_latest`: latest crawl summary per client for the SEO lead and technical audit agent.
+- `agency_reporting.client_crawl_comparison`: current-vs-previous deltas for task verification and monthly drift checks.
+
+Do not store raw crawl exports, raw HTML, rendered HTML, visible page text, scraped page bodies, screenshots, cookies, forms, request/response headers that include secrets, or full archive payloads in BigQuery. Raw crawl exports may only be created, uploaded, or retained outside BigQuery when the site/scope and destination have been explicitly approved.
+
+See `CRAWL_MEMORY.md` for the operating workflow.
 
 ## Client Roadmap Memory
 

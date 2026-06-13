@@ -451,6 +451,75 @@ CLIENT_HEALTH_ASSETS_SCHEMA: list[SchemaTuple] = [
 ]
 
 
+CLIENT_CRAWL_RUNS_SCHEMA: list[SchemaTuple] = [
+    ("crawl_id", "STRING", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("crawl_date", "DATE", "REQUIRED"),
+    ("ingested_at", "TIMESTAMP", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("crawl_trigger", "STRING", "REQUIRED"),
+    ("trigger_ref", "STRING", "NULLABLE"),
+    ("crawler", "STRING", "REQUIRED"),
+    ("crawl_scope", "STRING", "REQUIRED"),
+    ("start_url", "STRING", "REQUIRED"),
+    ("config_ref", "STRING", "NULLABLE"),
+    ("robots_respected", "BOOL", "REQUIRED"),
+    ("crawl_status", "STRING", "REQUIRED"),
+    ("pages_crawled", "INT64", "NULLABLE"),
+    ("internal_html_urls", "INT64", "NULLABLE"),
+    ("indexable_html_urls", "INT64", "NULLABLE"),
+    ("nonindexable_html_urls", "INT64", "NULLABLE"),
+    ("status_2xx_urls", "INT64", "NULLABLE"),
+    ("status_3xx_urls", "INT64", "NULLABLE"),
+    ("status_4xx_urls", "INT64", "NULLABLE"),
+    ("status_5xx_urls", "INT64", "NULLABLE"),
+    ("missing_title_urls", "INT64", "NULLABLE"),
+    ("duplicate_title_urls", "INT64", "NULLABLE"),
+    ("missing_meta_description_urls", "INT64", "NULLABLE"),
+    ("duplicate_meta_description_urls", "INT64", "NULLABLE"),
+    ("missing_h1_urls", "INT64", "NULLABLE"),
+    ("duplicate_h1_urls", "INT64", "NULLABLE"),
+    ("canonical_issue_urls", "INT64", "NULLABLE"),
+    ("low_content_urls", "INT64", "NULLABLE"),
+    ("issue_counts_json", "JSON", "NULLABLE"),
+    ("export_manifest_path", "STRING", "NULLABLE"),
+    ("export_drive_file_id", "STRING", "NULLABLE"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+    ("retention_expires_on", "DATE", "REQUIRED"),
+]
+
+
+CLIENT_CRAWL_URL_SNAPSHOTS_SCHEMA: list[SchemaTuple] = [
+    ("crawl_id", "STRING", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("crawl_date", "DATE", "REQUIRED"),
+    ("ingested_at", "TIMESTAMP", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("url", "STRING", "REQUIRED"),
+    ("url_hash", "STRING", "REQUIRED"),
+    ("normalized_url", "STRING", "NULLABLE"),
+    ("status_code", "INT64", "NULLABLE"),
+    ("content_type", "STRING", "NULLABLE"),
+    ("indexability", "STRING", "NULLABLE"),
+    ("indexability_status", "STRING", "NULLABLE"),
+    ("title", "STRING", "NULLABLE"),
+    ("title_length", "INT64", "NULLABLE"),
+    ("meta_description_length", "INT64", "NULLABLE"),
+    ("h1_count", "INT64", "NULLABLE"),
+    ("word_count", "INT64", "NULLABLE"),
+    ("canonical_url", "STRING", "NULLABLE"),
+    ("is_noindex", "BOOL", "NULLABLE"),
+    ("crawl_depth", "INT64", "NULLABLE"),
+    ("inlinks", "INT64", "NULLABLE"),
+    ("outlinks", "INT64", "NULLABLE"),
+    ("issue_flags_json", "JSON", "NULLABLE"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+    ("retention_expires_on", "DATE", "REQUIRED"),
+]
+
+
 REPORTING_CLIENT_TASK_STATUS_SCHEMA = [
     ("snapshot_date", "DATE", "REQUIRED"),
     ("client_slug", "STRING", "NULLABLE"),
@@ -836,6 +905,55 @@ REPORTING_CLIENT_HEALTH_CHECK_SCHEMA = [
 ]
 
 
+REPORTING_CLIENT_CRAWL_LATEST_SCHEMA = [
+    ("crawl_date", "DATE", "REQUIRED"),
+    ("crawl_id", "STRING", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("crawl_trigger", "STRING", "REQUIRED"),
+    ("crawler", "STRING", "REQUIRED"),
+    ("start_url", "STRING", "REQUIRED"),
+    ("crawl_status", "STRING", "REQUIRED"),
+    ("pages_crawled", "INT64", "NULLABLE"),
+    ("indexable_html_urls", "INT64", "NULLABLE"),
+    ("nonindexable_html_urls", "INT64", "NULLABLE"),
+    ("status_4xx_urls", "INT64", "NULLABLE"),
+    ("status_5xx_urls", "INT64", "NULLABLE"),
+    ("missing_title_urls", "INT64", "NULLABLE"),
+    ("duplicate_title_urls", "INT64", "NULLABLE"),
+    ("missing_meta_description_urls", "INT64", "NULLABLE"),
+    ("missing_h1_urls", "INT64", "NULLABLE"),
+    ("canonical_issue_urls", "INT64", "NULLABLE"),
+    ("low_content_urls", "INT64", "NULLABLE"),
+    ("issue_counts_json", "JSON", "NULLABLE"),
+    ("export_manifest_path", "STRING", "NULLABLE"),
+    ("export_drive_file_id", "STRING", "NULLABLE"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+
+REPORTING_CLIENT_CRAWL_COMPARISON_SCHEMA = [
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("current_crawl_id", "STRING", "REQUIRED"),
+    ("current_crawl_date", "DATE", "REQUIRED"),
+    ("previous_crawl_id", "STRING", "NULLABLE"),
+    ("previous_crawl_date", "DATE", "NULLABLE"),
+    ("crawl_trigger", "STRING", "REQUIRED"),
+    ("pages_crawled_delta", "INT64", "NULLABLE"),
+    ("indexable_html_urls_delta", "INT64", "NULLABLE"),
+    ("status_4xx_urls_delta", "INT64", "NULLABLE"),
+    ("status_5xx_urls_delta", "INT64", "NULLABLE"),
+    ("missing_title_urls_delta", "INT64", "NULLABLE"),
+    ("missing_meta_description_urls_delta", "INT64", "NULLABLE"),
+    ("missing_h1_urls_delta", "INT64", "NULLABLE"),
+    ("canonical_issue_urls_delta", "INT64", "NULLABLE"),
+    ("low_content_urls_delta", "INT64", "NULLABLE"),
+    ("comparison_status", "STRING", "REQUIRED"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+
 AGENT_RUN_LOG_SCHEMA: list[SchemaTuple] = [
     ("run_id", "STRING", "REQUIRED"),
     ("automation_id", "STRING", "NULLABLE"),
@@ -1061,6 +1179,39 @@ def agent_operating_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
     ]
 
 
+def crawl_memory_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
+    return [
+        TableSpec(
+            config.memory_dataset,
+            "client_crawl_runs",
+            CLIENT_CRAWL_RUNS_SCHEMA,
+            partition_field="crawl_date",
+            cluster_fields=("client_slug", "crawl_trigger", "crawler"),
+        ),
+        TableSpec(
+            config.memory_dataset,
+            "client_crawl_url_snapshots",
+            CLIENT_CRAWL_URL_SNAPSHOTS_SCHEMA,
+            partition_field="crawl_date",
+            cluster_fields=("client_slug", "url_hash"),
+        ),
+        TableSpec(
+            config.reporting_dataset,
+            "client_crawl_latest",
+            REPORTING_CLIENT_CRAWL_LATEST_SCHEMA,
+            partition_field="crawl_date",
+            cluster_fields=("client_slug", "crawl_status"),
+        ),
+        TableSpec(
+            config.reporting_dataset,
+            "client_crawl_comparison",
+            REPORTING_CLIENT_CRAWL_COMPARISON_SCHEMA,
+            partition_field="current_crawl_date",
+            cluster_fields=("client_slug", "comparison_status"),
+        ),
+    ]
+
+
 def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
     return [
         *control_table_specs(config),
@@ -1133,6 +1284,20 @@ def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
             partition_field="snapshot_date",
             cluster_fields=("client_slug", "asset_type", "presence_status"),
         ),
+        TableSpec(
+            config.memory_dataset,
+            "client_crawl_runs",
+            CLIENT_CRAWL_RUNS_SCHEMA,
+            partition_field="crawl_date",
+            cluster_fields=("client_slug", "crawl_trigger", "crawler"),
+        ),
+        TableSpec(
+            config.memory_dataset,
+            "client_crawl_url_snapshots",
+            CLIENT_CRAWL_URL_SNAPSHOTS_SCHEMA,
+            partition_field="crawl_date",
+            cluster_fields=("client_slug", "url_hash"),
+        ),
         TableSpec(config.reporting_dataset, "client_task_status", REPORTING_CLIENT_TASK_STATUS_SCHEMA, partition_field="snapshot_date"),
         TableSpec(config.reporting_dataset, "client_delivery_timeline", REPORTING_CLIENT_DELIVERY_TIMELINE_SCHEMA, cluster_fields=("client_slug",)),
         TableSpec(config.reporting_dataset, "client_month_performance", REPORTING_CLIENT_MONTH_PERFORMANCE_SCHEMA, cluster_fields=("client_slug",)),
@@ -1204,6 +1369,20 @@ def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
             partition_field="snapshot_date",
             cluster_fields=("client_slug", "health_status"),
         ),
+        TableSpec(
+            config.reporting_dataset,
+            "client_crawl_latest",
+            REPORTING_CLIENT_CRAWL_LATEST_SCHEMA,
+            partition_field="crawl_date",
+            cluster_fields=("client_slug", "crawl_status"),
+        ),
+        TableSpec(
+            config.reporting_dataset,
+            "client_crawl_comparison",
+            REPORTING_CLIENT_CRAWL_COMPARISON_SCHEMA,
+            partition_field="current_crawl_date",
+            cluster_fields=("client_slug", "comparison_status"),
+        ),
     ]
 
 
@@ -1225,6 +1404,11 @@ def ensure_agent_operating_tables(client: Any, config: BigQueryCostConfig) -> No
 def plan_agent_operating_tables(client: Any, config: BigQueryCostConfig) -> list[dict[str, Any]]:
     """Return a non-mutating plan for the lightweight agent operating tables."""
     return plan_tables(client, config, agent_operating_table_specs(config))
+
+
+def plan_crawl_memory_tables(client: Any, config: BigQueryCostConfig) -> list[dict[str, Any]]:
+    """Return a non-mutating plan for the technical crawl memory tables."""
+    return plan_tables(client, config, crawl_memory_table_specs(config))
 
 
 def ensure_monthly_api_snapshot_tables(client: Any, config: BigQueryCostConfig) -> None:
@@ -1323,6 +1507,11 @@ def ensure_roadmap_memory_tables(client: Any, config: BigQueryCostConfig) -> Non
             ),
         ],
     )
+
+
+def ensure_crawl_memory_tables(client: Any, config: BigQueryCostConfig) -> None:
+    """Create the technical crawl memory and comparison tables."""
+    ensure_tables(client, config, crawl_memory_table_specs(config))
 
 
 def ensure_agency_ops_tables(client: Any, config: BigQueryCostConfig) -> None:
