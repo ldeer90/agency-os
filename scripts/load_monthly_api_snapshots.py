@@ -4,13 +4,14 @@ from __future__ import annotations
 import argparse
 import calendar
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 import json
 import os
 from pathlib import Path
 import sys
 from typing import Any
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -48,6 +49,15 @@ AI_SOURCES = (
     "poe.com",
     "you.com",
 )
+MELBOURNE_TIMEZONE = ZoneInfo("Australia/Melbourne")
+
+
+def melbourne_now() -> datetime:
+    return datetime.now(MELBOURNE_TIMEZONE)
+
+
+def melbourne_today() -> date:
+    return melbourne_now().date()
 
 
 @dataclass(frozen=True)
@@ -69,7 +79,7 @@ class SourceResult:
 def complete_months(months: int, today: date | None = None, end_period: str | None = None) -> list[MonthSpec]:
     if months < 1:
         raise ValueError("--months must be at least 1")
-    today = today or date.today()
+    today = today or melbourne_today()
     if end_period:
         year, month = (int(part) for part in end_period.split("-", 1))
     else:
@@ -561,7 +571,7 @@ def main() -> int:
     load_dotenv_keys(args.se_ranking_env, SE_RANKING_ENV_KEYS)
 
     run_id = uuid4().hex
-    ingested_at = datetime.now(timezone.utc).isoformat()
+    ingested_at = melbourne_now().isoformat()
     rows = []
     statuses = []
     for client in clients:

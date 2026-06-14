@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, datetime
 import json
 import os
 from pathlib import Path
 import sys
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -46,6 +47,11 @@ DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "reports" / "daily"
 DEFAULT_RUN_DIR = PROJECT_ROOT / "data" / "agent_runs" / "agency_supervisor"
 DEFAULT_AGENT_RUN_INDEX = PROJECT_ROOT / "data" / "agent_runs" / "index.json"
 DEFAULT_ACTIVE_RUN_DIR = PROJECT_ROOT / "data" / "agent_runs" / "active"
+MELBOURNE_TIMEZONE = ZoneInfo("Australia/Melbourne")
+
+
+def melbourne_today() -> date:
+    return datetime.now(MELBOURNE_TIMEZONE).date()
 
 
 def load_env_file(path: Path) -> None:
@@ -70,7 +76,7 @@ def load_env_file(path: Path) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the dry-run SEO Agency OS Daily Agency Brief.")
-    parser.add_argument("--date", default=date.today().isoformat(), help="Brief date, YYYY-MM-DD.")
+    parser.add_argument("--date", default=melbourne_today().isoformat(), help="Brief date, YYYY-MM-DD. Defaults to today in Australia/Melbourne.")
     parser.add_argument("--from-bigquery", action="store_true", help="Read operating context from reporting marts through the capped runner.")
     parser.add_argument("--load-env", help="Optional .env path. Only Google credential keys are loaded.")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="Path to BigQuery cost guardrail config.")
@@ -138,7 +144,7 @@ FROM `{project}.{reporting}.client_task_status`
 WHERE COALESCE(normalized_status, 'Not Started') != 'Done'
   AND (
     due_date IS NULL
-    OR due_date < CURRENT_DATE()
+    OR due_date < CURRENT_DATE('Australia/Melbourne')
     OR owner IS NULL
     OR client_slug IS NULL
   )
@@ -266,7 +272,7 @@ def daily_findings_and_actions(context: dict[str, list[dict]], *, run_id: str, c
 
     hygiene_by_client: dict[str, list[dict]] = defaultdict(list)
     for row in context.get("delivery_items", []):
-        hygiene_issues = task_hygiene_issues(row, today=date.today())
+        hygiene_issues = task_hygiene_issues(row, today=melbourne_today())
         if not hygiene_issues:
             continue
         client_slug = row.get("client_slug") or "unmapped-monday"

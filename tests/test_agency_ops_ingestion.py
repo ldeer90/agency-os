@@ -12,6 +12,7 @@ from agency_bigquery.agency_ops_ingestion import (
     build_roadmap_reporting_marts,
     build_reporting_marts,
     client_comms_attention_sql,
+    client_profile_fields,
     client_health_check_sql,
     client_roadmap_current_sql,
     collect_agency_ops_rows,
@@ -20,10 +21,14 @@ from agency_bigquery.agency_ops_ingestion import (
     extract_monthly_reporting_coverage,
     normalize_status,
     normalize_comms_summary_row,
+    normalize_client_onboarding_profile_row,
     normalize_roadmap_item_row,
     parse_comms_summary_jsonl,
+    parse_client_board_map_rows,
     parse_client_health_assets,
+    parse_client_registry,
     parse_monday_board_snapshots,
+    parse_client_onboarding_profile_jsonl,
     parse_roadmap_item_jsonl,
     roadmap_source_rows_from_items,
     read_csv_rows,
@@ -325,6 +330,24 @@ class AgencyOpsIngestionTest(unittest.TestCase):
         self.assertEqual(coverage["coverage_status"], "missing_core_metrics")
         self.assertEqual(coverage["ga4_caveats"], "No access")
 
+    def test_client_registry_stores_favicon_metadata_from_canonical_host(self) -> None:
+        with TemporaryDirectory() as tmp:
+            paths = self.make_fixture(Path(tmp))
+            board_rows = read_csv_rows(paths.monday_derived / "client_board_matrix.csv")
+
+            rows = parse_client_registry(
+                paths,
+                board_rows,
+                run_id="run-1",
+                ingested_at="2026-06-12T00:00:00+00:00",
+            )
+
+        row = next(item for item in rows if item["client_slug"] == "example-client")
+        self.assertEqual(row["canonical_host"], "example.com")
+        self.assertEqual(row["favicon_url"], "https://example.com/favicon.ico")
+        self.assertEqual(row["favicon_source"], "canonical_host_candidates")
+        self.assertIn("https://icons.duckduckgo.com/ip3/example.com.ico", row["favicon_candidates_json"])
+
     def test_reporting_marts_include_monthly_summary_tables_through_runner(self) -> None:
         runner = FakeRunner()
 
@@ -348,6 +371,24 @@ class AgencyOpsIngestionTest(unittest.TestCase):
         self.assertIn("client_comms_attention", submitted_sql)
         self.assertIn("client_roadmap_monthly_completion", submitted_sql)
         self.assertIn("client_health_check", submitted_sql)
+        self.assertIn("WHEN 'acorn-car-rentals' THEN 'acorn-rentals'", submitted_sql)
+        self.assertIn("i.canonical_client_slug AS client_slug", submitted_sql)
+
+    def test_client_board_map_rows_normalize_known_aliases(self) -> None:
+        rows = parse_client_board_map_rows(
+            [
+                {
+                    "client_slug": "acorn-car-rentals",
+                    "client_name": "Acorn Car Rentals",
+                    "client_board_id": "101",
+                    "client_board_name": "Acorn Car Rentals",
+                }
+            ],
+            run_id="run-1",
+            ingested_at="2026-06-14T00:00:00+00:00",
+        )
+
+        self.assertEqual(rows[0]["client_slug"], "acorn-rentals")
 
     def test_client_health_assets_capture_expected_presence_metadata(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -593,6 +634,28 @@ class AgencyOpsIngestionTest(unittest.TestCase):
         self.assertEqual(monday_refs["acorn-rentals"], "101")
         self.assertEqual(monday_refs["ducati-melbourne"], "103")
         self.assertEqual(monday_refs["salad-servers-direct"], "107")
+
+    def test_client_profile_fields_extract_sanitized_contact_metadata(self) -> None:
+        fields = client_profile_fields(
+            {
+                "business": {"abn": "12 345 678 901"},
+                "primary_contact": {
+                    "name": "Jane Smith",
+                    "role": "Marketing Manager",
+                    "email": "jane@example.com",
+                },
+            }
+        )
+
+        self.assertEqual(fields["abn"], "12 345 678 901")
+        self.assertEqual(fields["primary_contact_name"], "Jane Smith")
+        self.assertEqual(fields["primary_contact_role"], "Marketing Manager")
+        self.assertNotIn("email", fields)
+
+    def test_client_profile_fields_reject_email_like_contact_values(self) -> None:
+        fields = client_profile_fields({"primary_contact_name": "jane@example.com"})
+
+        self.assertIsNone(fields["primary_contact_name"])
 
     def test_client_health_check_sql_rolls_up_asset_inventory(self) -> None:
         sql = client_health_check_sql("project", "memory", "reporting")
@@ -844,6 +907,70 @@ class AgencyOpsIngestionTest(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "line 2"):
                 parse_roadmap_item_jsonl(path, run_id="run-1", ingested_at="2026-06-12T00:00:00+00:00")
+
+    def test_client_onboarding_profile_normalizes_safe_context(self) -> None:
+        row = normalize_client_onboarding_profile_row(
+            {
+                "client_slug": "Example Client",
+                "client_name": "Example Client",
+                "business_summary": "Ecommerce brand focused on premium gift bundles.",
+                "primary_goals": ["Grow organic revenue", "Improve non-brand discovery"],
+                "seo_priorities": ["Collection page optimisation", "Technical crawl health"],
+                "target_audience": "Australian gift buyers researching premium hampers.",
+                "key_products_or_services": ["Gift hampers", "Corporate gifting"],
+                "important_pages": ["/collections/gift-hampers"],
+                "constraints_or_risks": ["Seasonal demand peaks require early approvals"],
+                "agent_context_summary": "Prioritise revenue-driving collection SEO and keep recommendations practical.",
+                "source_drive_file_id": "abcDEF_1234567890",
+                "source_drive_file_name": "Client onboarding summary",
+                "source_modified_at": "2026-06-12T00:00:00+00:00",
+                "review_status": "reviewed",
+                "confidence": 0.9,
+            },
+            run_id="run-1",
+            ingested_at="2026-06-12T00:00:00+00:00",
+        )
+
+        self.assertEqual(row["client_slug"], "example-client")
+        self.assertEqual(row["review_status"], "reviewed")
+        self.assertEqual(row["validation_status"], "validated")
+        self.assertEqual(row["primary_goals_json"], ["Grow organic revenue", "Improve non-brand discovery"])
+
+    def test_client_onboarding_profile_rejects_sensitive_or_raw_content(self) -> None:
+        base = {
+            "client_slug": "example-client",
+            "client_name": "Example Client",
+            "business_summary": "Short safe summary.",
+            "review_status": "reviewed",
+            "confidence": 0.8,
+        }
+        unsafe_cases = [
+            {"business_summary": "Use api_key=secret when accessing the account."},
+            {"primary_goals": ["Email person@example.com before every publish."]},
+            {"agent_context_summary": "From: person@example.com\nSubject: Raw onboarding form"},
+            {"approval_preferences": "Call 0412 345 678 before publishing."},
+        ]
+        for override in unsafe_cases:
+            with self.subTest(override=override):
+                with self.assertRaises(ValueError):
+                    normalize_client_onboarding_profile_row(
+                        {**base, **override},
+                        run_id="run-1",
+                        ingested_at="2026-06-12T00:00:00+00:00",
+                    )
+
+    def test_parse_client_onboarding_profile_jsonl_reports_line_numbers(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "profiles.jsonl"
+            write(
+                path,
+                json.dumps({"client_slug": "example-client", "client_name": "Example Client", "confidence": 0.8})
+                + "\n"
+                + json.dumps({"client_slug": "bad-client", "client_name": "Bad Client", "business_summary": "password=secret"}),
+            )
+
+            with self.assertRaisesRegex(ValueError, "line 2"):
+                parse_client_onboarding_profile_jsonl(path, run_id="run-1", ingested_at="2026-06-12T00:00:00+00:00")
 
     def test_roadmap_reporting_marts_use_capped_runner(self) -> None:
         runner = FakeRunner()

@@ -137,11 +137,66 @@ LIMIT {int(limit)}
     elif agent_id == "technical_audit_agent":
         filter_sql = _client_filter(client_slug)
         sql = f"""
-SELECT client_slug, client_name, domain, workflow_profile, sidecar_path, timeline_path,
-       'agency_memory.seo_client_memory_summaries' AS source_table, source_ref_hash
-FROM `{project}.{memory}.seo_client_memory_summaries`
-{filter_sql}
-QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY synced_at DESC) = 1
+SELECT
+  s.client_slug,
+  s.client_name,
+  s.domain,
+  s.workflow_profile,
+  s.sidecar_path,
+  s.timeline_path,
+  c.crawl_id,
+  c.crawl_date,
+  c.crawl_trigger,
+  c.crawler,
+  c.crawl_status,
+  c.pages_crawled,
+  c.indexable_html_urls,
+  c.nonindexable_html_urls,
+  c.status_4xx_urls,
+  c.status_5xx_urls,
+  c.missing_title_urls,
+  c.duplicate_title_urls,
+  c.missing_meta_description_urls,
+  c.missing_h1_urls,
+  c.canonical_issue_urls,
+  c.low_content_urls,
+  c.issue_counts_json,
+  issue_examples.crawl_issue_examples_json,
+  c.export_manifest_path,
+  'agency_memory.seo_client_memory_summaries + agency_reporting.client_crawl_latest + agency_memory.client_crawl_issue_rows' AS source_table,
+  COALESCE(c.source_ref_hash, s.source_ref_hash) AS source_ref_hash
+FROM `{project}.{memory}.seo_client_memory_summaries` s
+LEFT JOIN `{project}.{reporting}.client_crawl_latest` c
+USING (client_slug)
+LEFT JOIN (
+  SELECT
+    crawl_id,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+      issue_name,
+      issue_type,
+      issue_priority,
+      issue_count,
+      address,
+      source_url,
+      destination_url,
+      status_code
+    ) ORDER BY
+      CASE LOWER(COALESCE(issue_priority, ''))
+        WHEN 'high' THEN 1
+        WHEN 'medium' THEN 2
+        WHEN 'low' THEN 3
+        ELSE 4
+      END,
+      COALESCE(issue_count, 0) DESC,
+      row_number
+      LIMIT 25
+    )) AS crawl_issue_examples_json
+  FROM `{project}.{memory}.client_crawl_issue_rows`
+  GROUP BY crawl_id
+) issue_examples
+ON c.crawl_id = issue_examples.crawl_id
+{filter_sql.replace("WHERE client_slug", "WHERE s.client_slug") if filter_sql else ""}
+QUALIFY ROW_NUMBER() OVER (PARTITION BY s.client_slug ORDER BY s.synced_at DESC) = 1
 ORDER BY client_slug
 LIMIT {int(limit)}
 """

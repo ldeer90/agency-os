@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Any
 
@@ -351,6 +352,101 @@ def technical_audit_output(rows: list[dict[str, Any]], *, run_id: str, created_a
         has_domain = bool(row.get("domain") or row.get("start_url") or row.get("site_url"))
         if not has_domain:
             continue
+        crawl_id = row.get("crawl_id")
+        if crawl_id:
+            if row.get("crawl_status") == "coverage_failed":
+                _append_finding_action(
+                    findings=findings,
+                    actions=actions,
+                    run_id=run_id,
+                    agent_id="technical_audit_agent",
+                    created_at=created_at,
+                    row=row,
+                    finding_type="technical_crawl_coverage_blocker",
+                    severity="high",
+                    summary=f"{client} has a crawl export that failed coverage validation and should not be used for technical prioritisation.",
+                    recommended_action="Rerun the crawl with an approved full-site scope, or reload it as an explicit partial-scope crawl with a scope reference before sending findings to the SEO lead.",
+                    evidence=_evidence(
+                        row,
+                        row.get("source_table") or "agency_reporting.client_crawl_latest",
+                        {
+                            "crawl_id": crawl_id,
+                            "crawl_date": row.get("crawl_date"),
+                            "pages_crawled": row.get("pages_crawled"),
+                            "crawl_status": row.get("crawl_status"),
+                            "issue_counts_json": row.get("issue_counts_json"),
+                        },
+                    ),
+                    priority="high",
+                    confidence_score=0.9,
+                )
+                continue
+            issue_metrics = {
+                "status_4xx_urls": row.get("status_4xx_urls"),
+                "status_5xx_urls": row.get("status_5xx_urls"),
+                "missing_title_urls": row.get("missing_title_urls"),
+                "duplicate_title_urls": row.get("duplicate_title_urls"),
+                "missing_meta_description_urls": row.get("missing_meta_description_urls"),
+                "missing_h1_urls": row.get("missing_h1_urls"),
+                "canonical_issue_urls": row.get("canonical_issue_urls"),
+                "low_content_urls": row.get("low_content_urls"),
+            }
+            known_issues = {key: value for key, value in issue_metrics.items() if value not in (None, 0, "0")}
+            issue_counts = row.get("issue_counts_json") or {}
+            top_issues = issue_counts.get("top_issues") if isinstance(issue_counts, dict) else None
+            if top_issues:
+                known_issues["top_issues"] = top_issues[:10]
+                known_issues["summary_source"] = issue_counts.get("summary_source")
+            issue_examples = row.get("crawl_issue_examples_json")
+            if issue_examples:
+                try:
+                    parsed_examples = json.loads(issue_examples)
+                except (TypeError, json.JSONDecodeError):
+                    parsed_examples = issue_examples
+                if parsed_examples:
+                    known_issues["affected_url_examples"] = parsed_examples[:10] if isinstance(parsed_examples, list) else parsed_examples
+            if known_issues:
+                _append_finding_action(
+                    findings=findings,
+                    actions=actions,
+                    run_id=run_id,
+                    agent_id="technical_audit_agent",
+                    created_at=created_at,
+                    row=row,
+                    finding_type="technical_crawl_issue_summary",
+                    severity="medium",
+                    summary=f"{client} latest crawl has technical issue counts that need SEO lead review.",
+                    recommended_action="Review the issue-count summary, prioritise commercial-impact fixes, and route any implementation tasks through qa_guardrail before action.",
+                    evidence=_evidence(row, row.get("source_table") or "agency_reporting.client_crawl_latest", known_issues),
+                    priority="medium",
+                    confidence_score=0.78,
+                )
+            else:
+                _append_finding_action(
+                    findings=findings,
+                    actions=actions,
+                    run_id=run_id,
+                    agent_id="technical_audit_agent",
+                    created_at=created_at,
+                    row=row,
+                    finding_type="technical_crawl_summary_missing_issue_counts",
+                    severity="medium",
+                    summary=f"{client} has a completed crawl ({row.get('pages_crawled')} URLs), but issue-count fields are not loaded yet.",
+                    recommended_action="Ask the SEO lead to queue a sanitized Screaming Frog summary export/load so technical issues can be prioritised from counts without storing raw HTML or visible text.",
+                    evidence=_evidence(
+                        row,
+                        row.get("source_table") or "agency_reporting.client_crawl_latest",
+                        {
+                            "crawl_id": crawl_id,
+                            "crawl_date": row.get("crawl_date"),
+                            "pages_crawled": row.get("pages_crawled"),
+                            "crawl_status": row.get("crawl_status"),
+                            "export_manifest_path": row.get("export_manifest_path"),
+                        },
+                    ),
+                    priority="high",
+                    confidence_score=0.86,
+                )
         _append_finding_action(
             findings=findings,
             actions=actions,

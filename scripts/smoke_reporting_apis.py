@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import calendar
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 import json
 import os
 from pathlib import Path
@@ -12,6 +12,7 @@ import re
 import shlex
 import sys
 from typing import Any
+from zoneinfo import ZoneInfo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -25,6 +26,7 @@ DEFAULT_SEO_AUTOMATION_ENV = PROJECTS_ROOT / "SEO Automation" / ".env"
 DEFAULT_REPORTING_ROOT = PROJECTS_ROOT / "seo-reporting-platform"
 DEFAULT_REPORTING_ENV = DEFAULT_REPORTING_ROOT / ".env.local"
 DEFAULT_SE_RANKING_ENV = Path.home() / ".codex" / "se-ranking-env.zsh"
+MELBOURNE_TIMEZONE = ZoneInfo("Australia/Melbourne")
 
 GOOGLE_ENV_KEYS = {"GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT"}
 SE_RANKING_ENV_KEYS = {"SE_RANKING_API_KEY", "PROJECT_API_TOKEN", "DATA_API_TOKEN"}
@@ -131,7 +133,7 @@ def latest_report_range(reporting_root: Path, client_slug: str) -> tuple[str, st
         start, end = month_range(period_id)
         matches.append((period_id, start, end))
     if not matches:
-        previous_month = date.today().replace(day=1)
+        previous_month = datetime.now(MELBOURNE_TIMEZONE).date().replace(day=1)
         month = previous_month.month - 1 or 12
         year = previous_month.year if previous_month.month > 1 else previous_month.year - 1
         period_id = f"{year:04d}-{month:02d}"
@@ -244,7 +246,7 @@ def sanitized_error(exc: Exception) -> tuple[str, str]:
 
 
 def run_check(source: str, client: dict[str, Any], client_slug: str, start: str, end: str) -> SmokeResult:
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(MELBOURNE_TIMEZONE).isoformat()
     try:
         if source == "ga4":
             rows_returned = ga4_smoke(client, start, end)

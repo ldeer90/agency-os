@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "source": "public_homepage_icon_metadata",
+  "notes": "Curated public favicon/icon URLs for active dashboard clients. Store URLs only; do not store downloaded images or page bodies.",
+  "clients": {
+    "acorn-rentals": [
+      "https://www.acornrentals.com.au/wp-content/uploads/2025/06/cropped-Acorn-rentals-1-192x192.png",
+      "https://www.acornrentals.com.au/wp-content/uploads/2025/06/cropped-Acorn-rentals-1-180x180.png",
+      "https://www.acornrentals.com.au/wp-content/uploads/2025/06/cropped-Acorn-rentals-1-32x32.png"
+    ],
+    "avenue-hampers": [
+      "https://www.avenuehampers.com.au/cdn/shop/files/logo-footer_32x32.png?v=1738613327"
+    ],
+    "ducati-melbourne": [
+      "https://joerascalducati.com.au/cdn/shop/files/JoeRascal-DucatiMotorcycle-Favacon_ffa8b24b-d1d6-44ec-8113-77ccf0843bf6.png?crop=center&height=32&v=1753407064&width=32"
+    ],
+    "joe-rascal-harley": [
+      "https://joerascalharley.com.au/cdn/shop/files/JoeRascal-HarleyDavidson-BlackLogo-Favacon.png?crop=center&height=32&v=1751974460&width=32"
+    ],
+    "little-shop-of-happiness": [
+      "https://www.littleshopofhappiness.com.au/cdn/shop/files/2017_logo_transparent_background_3_32x32.png?v=1737735774"
+    ],
+    "melani-the-label": [
+      "https://melanithelabel.com/cdn/shop/files/favicon.png?crop=center&height=32&v=1714370225&width=32"
+    ],
+    "salad-servers-direct": [
+      "https://direct.saladservers.com.au/cdn/shop/files/Salad_Servers_Black_CMYK_Square_2_-_Copy_32x32.jpg?v=1613680561"
+    ],
+    "shop-rongrong": [
+      "https://shoprongrong.com/cdn/shop/files/favicon_shop_rongrong.png?crop=center&height=32&v=1773530721&width=32"
+    ],
+    "travelkon": [
+      "https://images.travelkon.com.au/wp-content/uploads/2024/03/25234613/cropped-TravelKon-logo-white-192x192.png",
+      "https://images.travelkon.com.au/wp-content/uploads/2024/03/25234613/cropped-TravelKon-logo-white-180x180.png",
+      "https://images.travelkon.com.au/wp-content/uploads/2024/03/25234613/cropped-TravelKon-logo-white-32x32.png"
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 import hashlib
 import json
 import re
@@ -9,10 +9,12 @@ import tempfile
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from .agency_ops_ingestion import slugify
 
 
+MELBOURNE_TIMEZONE = ZoneInfo("Australia/Melbourne")
 ALLOWED_FINDING_SEVERITIES = {"critical", "high", "medium", "low", "info"}
 ALLOWED_ACTION_PRIORITIES = {"high", "medium", "low"}
 ALLOWED_ACTION_STATUSES = {"suggested", "needs_review", "approved", "rejected", "completed", "ignored"}
@@ -82,16 +84,19 @@ class AgentPermissions:
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(MELBOURNE_TIMEZONE).isoformat()
 
 
 def iso_date(value: str | None) -> str | None:
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).date().isoformat()
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=MELBOURNE_TIMEZONE)
+    return parsed.astimezone(MELBOURNE_TIMEZONE).date().isoformat()
 
 
 def stable_hash(value: Any, *, length: int = 32) -> str:

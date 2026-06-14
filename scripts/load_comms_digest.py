@@ -112,7 +112,7 @@ def enforce_retention(runner: CappedBigQueryRunner, config: BigQueryCostConfig, 
     for table in ("client_comms_weekly_summaries", "client_comms_digest_runs"):
         sql = f"""
 DELETE FROM `{project}.{memory}.{table}`
-WHERE week_start < DATE_SUB(CURRENT_DATE(), INTERVAL {retention_months} MONTH)
+WHERE week_start < DATE_SUB(CURRENT_DATE('Australia/Melbourne'), INTERVAL {retention_months} MONTH)
 """
         runner.run_query(sql, purpose=f"comms-memory: enforce {retention_months}-month retention on {table}")
 

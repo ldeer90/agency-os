@@ -16,6 +16,7 @@ from agency_bigquery.agent_ops import (
     build_agent_approval_row,
     build_context_pack,
     daily_brief_markdown,
+    iso_date,
     load_agent_permissions,
     clean_client_slug,
     mark_agent_run_completed,
@@ -121,6 +122,10 @@ class AgentOpsTest(unittest.TestCase):
         self.assertEqual(clean_client_slug("joe-rascal-ducati"), "ducati-melbourne")
         self.assertEqual(clean_client_slug("salad-servers"), "salad-servers-direct")
 
+    def test_iso_date_uses_melbourne_calendar_day(self) -> None:
+        self.assertEqual(iso_date("2026-06-13T14:30:00Z"), "2026-06-14")
+        self.assertEqual(iso_date("2026-06-14T00:30:00+10:00"), "2026-06-14")
+
     def test_task_hygiene_flags_metadata_issues(self) -> None:
         issues = task_hygiene_issues(
             {
@@ -174,15 +179,25 @@ class AgentOpsTest(unittest.TestCase):
 
         runs = specs[("agency_memory", "client_crawl_runs")]
         urls = specs[("agency_memory", "client_crawl_url_snapshots")]
+        issues = specs[("agency_memory", "client_crawl_issue_rows")]
+        links = specs[("agency_memory", "client_crawl_link_rows")]
+        exports = specs[("agency_memory", "client_crawl_export_rows")]
         latest = specs[("agency_reporting", "client_crawl_latest")]
         comparison = specs[("agency_reporting", "client_crawl_comparison")]
 
         self.assertEqual(runs.partition_field, "crawl_date")
         self.assertEqual(urls.partition_field, "crawl_date")
+        self.assertEqual(issues.partition_field, "crawl_date")
+        self.assertEqual(links.partition_field, "crawl_date")
+        self.assertEqual(exports.partition_field, "crawl_date")
         self.assertEqual(latest.partition_field, "crawl_date")
         self.assertEqual(comparison.partition_field, "current_crawl_date")
         self.assertIn("retention_expires_on", runs.schema_by_name)
         self.assertIn("retention_expires_on", urls.schema_by_name)
+        self.assertIn("raw_row_json", urls.schema_by_name)
+        self.assertIn("raw_row_json", issues.schema_by_name)
+        self.assertIn("raw_row_json", links.schema_by_name)
+        self.assertIn("raw_row_json", exports.schema_by_name)
         self.assertNotIn("raw_html", urls.schema_by_name)
         self.assertNotIn("visible_text", urls.schema_by_name)
         self.assertEqual(runs.cluster_fields, ("client_slug", "crawl_trigger", "crawler"))

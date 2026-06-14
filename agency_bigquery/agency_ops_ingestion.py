@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 from typing import Any, Iterable
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from .capped_query_runner import CappedBigQueryRunner
 from .cost_config import BigQueryCostConfig
@@ -19,6 +20,7 @@ PROJECTS_ROOT = Path("/Users/laurencedeer/Projects/Codex")
 DEFAULT_MONDAY_HUB_ROOT = PROJECTS_ROOT / "monday-agency-hub"
 DEFAULT_SEO_AUTOMATION_ROOT = PROJECTS_ROOT / "SEO Automation"
 DEFAULT_SEO_REPORTING_ROOT = PROJECTS_ROOT / "seo-reporting-platform"
+MELBOURNE_TIMEZONE = ZoneInfo("Australia/Melbourne")
 
 V1_BOARD_ROLES = {
     "client_facing",
@@ -77,7 +79,16 @@ ROADMAP_ALLOWED_STATUSES = {"planned", "in_progress", "completed", "deferred", "
 ROADMAP_ALLOWED_EVIDENCE_TYPES = {"monday", "timeline", "report", "manual", "none"}
 ROADMAP_MAX_TITLE_CHARS = 180
 ROADMAP_MAX_SUMMARY_CHARS = 360
+CLIENT_CONTEXT_ALLOWED_REVIEW_STATUSES = {"draft", "reviewed", "approved"}
+CLIENT_CONTEXT_MAX_TEXT_CHARS = 520
+CLIENT_CONTEXT_MAX_LIST_ITEM_CHARS = 180
+CLIENT_CONTEXT_MAX_LIST_ITEMS = 8
 ROADMAP_URL_RE = re.compile(r"^https?://[^\s<>\"]+$|^/[A-Za-z0-9][^\s<>\"]*$")
+CLIENT_SLUG_ALIASES = {
+    "acorn-car-rentals": "acorn-rentals",
+    "joe-rascal-ducati": "ducati-melbourne",
+    "salad-servers": "salad-servers-direct",
+}
 HEALTH_VERIFICATION_LEVELS = {
     "route_config",
     "local_content",
@@ -129,6 +140,10 @@ class SourcePaths:
     def api_smoke_verifications(self) -> Path:
         return self.big_query / "data" / "client_health" / "api_smoke_verifications.json"
 
+    @property
+    def client_context_staging(self) -> Path:
+        return self.big_query / "data" / "client_context" / "staging"
+
 
 @dataclass(frozen=True)
 class IngestionSummary:
@@ -139,11 +154,11 @@ class IngestionSummary:
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(MELBOURNE_TIMEZONE).isoformat()
 
 
 def today_iso() -> str:
-    return date.today().isoformat()
+    return datetime.now(MELBOURNE_TIMEZONE).date().isoformat()
 
 
 def slugify(value: str | None) -> str:
@@ -151,6 +166,16 @@ def slugify(value: str | None) -> str:
     cleaned = cleaned.replace("&", " and ")
     cleaned = re.sub(r"[^a-z0-9]+", "-", cleaned)
     return cleaned.strip("-")
+
+
+def canonical_client_slug(value: Any) -> str:
+    slug = slugify(str(value or ""))
+    return CLIENT_SLUG_ALIASES.get(slug, slug)
+
+
+def canonical_client_slug_sql(expression: str) -> str:
+    clauses = " ".join(f"WHEN '{alias}' THEN '{canonical}'" for alias, canonical in sorted(CLIENT_SLUG_ALIASES.items()))
+    return f"CASE LOWER({expression}) {clauses} ELSE LOWER({expression}) END"
 
 
 def parse_date(value: Any) -> str | None:
@@ -360,6 +385,17 @@ def normalize_drive_id(value: Any, *, field_name: str) -> str | None:
     return text
 
 
+def normalize_opaque_drive_id(value: Any, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    text = str(value).strip()
+    if has_secret_like_text(text) or has_email_address(text) or has_raw_comms_shape(text):
+        raise ValueError(f"{field_name} contains unsafe text")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{10,160}", text):
+        raise ValueError(f"{field_name} must be a Drive-style opaque ID")
+    return text
+
+
 def normalize_target_url(value: Any) -> str | None:
     text = require_summary_safe_text(value, field_name="target_url", max_chars=300)
     if not text:
@@ -367,6 +403,100 @@ def normalize_target_url(value: Any) -> str | None:
     if not ROADMAP_URL_RE.fullmatch(text):
         raise ValueError("target_url must be an http(s) URL or site-relative path")
     return text
+
+
+def require_client_context_text(value: Any, *, field_name: str, max_chars: int = CLIENT_CONTEXT_MAX_TEXT_CHARS) -> str | None:
+    return require_summary_safe_text(value, field_name=field_name, max_chars=max_chars)
+
+
+def require_client_context_list(value: Any, *, field_name: str) -> list[str] | None:
+    if value in (None, ""):
+        return None
+    values = value if isinstance(value, list) else [value]
+    if len(values) > CLIENT_CONTEXT_MAX_LIST_ITEMS:
+        raise ValueError(f"{field_name} has too many items")
+    output: list[str] = []
+    for index, item in enumerate(values, start=1):
+        text = require_client_context_text(item, field_name=f"{field_name}[{index}]", max_chars=CLIENT_CONTEXT_MAX_LIST_ITEM_CHARS)
+        if text:
+            output.append(text)
+    return output or None
+
+
+def normalize_client_onboarding_profile_row(row: dict[str, Any], *, run_id: str, ingested_at: str) -> dict[str, Any]:
+    client_slug = slugify(require_client_context_text(row.get("client_slug"), field_name="client_slug", max_chars=120))
+    if not client_slug:
+        raise ValueError("client_slug is required")
+    client_name = require_client_context_text(row.get("client_name"), field_name="client_name", max_chars=160)
+    if not client_name:
+        raise ValueError("client_name is required")
+    review_status = normalize_choice(
+        row.get("review_status"),
+        field_name="review_status",
+        allowed=CLIENT_CONTEXT_ALLOWED_REVIEW_STATUSES,
+        default="draft",
+    )
+    source_drive_file_id = normalize_opaque_drive_id(row.get("source_drive_file_id"), field_name="source_drive_file_id")
+    source_drive_file_name = require_client_context_text(row.get("source_drive_file_name"), field_name="source_drive_file_name", max_chars=220)
+    source_ref = row.get("source_ref") or "|".join(
+        part for part in (client_slug, source_drive_file_id or "", source_drive_file_name or "") if part
+    )
+    source_ref_hash = str(row.get("source_ref_hash") or hash_source_ref(source_ref)).strip().lower()
+    if not re.fullmatch(r"[a-f0-9]{16,64}", source_ref_hash):
+        raise ValueError("source_ref_hash must be hash-like")
+    return {
+        "ingested_at": ingested_at,
+        "run_id": run_id,
+        "client_slug": client_slug,
+        "client_name": client_name,
+        "business_summary": require_client_context_text(row.get("business_summary"), field_name="business_summary"),
+        "primary_goals_json": json_dump(require_client_context_list(row.get("primary_goals"), field_name="primary_goals")),
+        "seo_priorities_json": json_dump(require_client_context_list(row.get("seo_priorities"), field_name="seo_priorities")),
+        "target_audience": require_client_context_text(row.get("target_audience"), field_name="target_audience"),
+        "key_products_or_services_json": json_dump(require_client_context_list(row.get("key_products_or_services"), field_name="key_products_or_services")),
+        "important_pages_json": json_dump(require_client_context_list(row.get("important_pages"), field_name="important_pages")),
+        "brand_tone": require_client_context_text(row.get("brand_tone"), field_name="brand_tone", max_chars=260),
+        "competitors_json": json_dump(require_client_context_list(row.get("competitors"), field_name="competitors")),
+        "constraints_or_risks_json": json_dump(require_client_context_list(row.get("constraints_or_risks"), field_name="constraints_or_risks")),
+        "approval_preferences": require_client_context_text(row.get("approval_preferences"), field_name="approval_preferences", max_chars=360),
+        "reporting_expectations": require_client_context_text(row.get("reporting_expectations"), field_name="reporting_expectations", max_chars=360),
+        "agent_context_summary": require_client_context_text(row.get("agent_context_summary"), field_name="agent_context_summary"),
+        "source_drive_file_id": source_drive_file_id,
+        "source_drive_file_name": source_drive_file_name,
+        "source_modified_at": parse_timestamp(row.get("source_modified_at")),
+        "review_status": review_status,
+        "confidence": coerce_confidence(row.get("confidence", 0)),
+        "source_ref_hash": source_ref_hash,
+        "validation_status": "validated",
+    }
+
+
+def parse_client_onboarding_profile_jsonl(path: Path, *, run_id: str, ingested_at: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            payload = json.loads(stripped)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"line {line_number}: invalid JSON") from exc
+        if not isinstance(payload, dict):
+            raise ValueError(f"line {line_number}: expected JSON object")
+        try:
+            rows.append(normalize_client_onboarding_profile_row(payload, run_id=run_id, ingested_at=ingested_at))
+        except ValueError as exc:
+            raise ValueError(f"line {line_number}: {exc}") from exc
+    return rows
+
+
+def parse_client_onboarding_profiles(paths: SourcePaths, *, run_id: str, ingested_at: str) -> list[dict[str, Any]]:
+    if not paths.client_context_staging.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for path in sorted(paths.client_context_staging.glob("*.jsonl")):
+        rows.extend(parse_client_onboarding_profile_jsonl(path, run_id=run_id, ingested_at=ingested_at))
+    return rows
 
 
 def normalize_source_ref_hashes(row: dict[str, Any]) -> list[str] | None:
@@ -779,6 +909,7 @@ def source_registry_rows(paths: SourcePaths, ingested_at: str) -> list[dict[str,
         ("reporting_report_index", "SEO Reporting report index", "json", paths.reporting_content / "report-index.json", "monthly", "medium"),
         ("reporting_report_snapshots", "SEO Reporting report snapshots", "json", paths.reporting_content / "reports", "monthly", "medium"),
         ("client_roadmap_items", "Sanitized client roadmap item staging JSONL", "jsonl", PROJECTS_ROOT / "Big Query" / "data" / "roadmap_memory" / "staging", "weekly", "medium"),
+        ("client_onboarding_profiles", "Sanitized client onboarding goals and priorities staging JSONL", "jsonl", paths.client_context_staging, "weekly", "medium"),
     ]
     return [
         {
@@ -1085,9 +1216,9 @@ def parse_client_health_assets(
     api_smoke_verifications = load_api_smoke_verifications(paths.api_smoke_verifications)
     reporting_clients = load_reporting_clients(paths.reporting_config / "clients.json")
     reporting_by_slug = {
-        slugify(client.get("slug") or client.get("name")): client
+        canonical_client_slug(client.get("slug") or client.get("name")): client
         for client in reporting_clients
-        if slugify(client.get("slug") or client.get("name"))
+        if canonical_client_slug(client.get("slug") or client.get("name"))
     }
     known_slug_by_board_id: dict[str, str] = {}
     clients: dict[str, dict[str, Any]] = {
@@ -1102,7 +1233,7 @@ def parse_client_health_assets(
             payload = load_json(path)
         except json.JSONDecodeError:
             continue
-        slug = slugify(path.stem)
+        slug = canonical_client_slug(path.stem)
         if not slug:
             continue
         sidecars[slug] = {"path": path, "payload": payload}
@@ -1117,7 +1248,7 @@ def parse_client_health_assets(
 
     board_by_slug: dict[str, dict[str, str]] = {}
     for row in client_board_rows:
-        raw_slug = row.get("client_slug") or slugify(row.get("client_name"))
+        raw_slug = canonical_client_slug(row.get("client_slug") or row.get("client_name"))
         board_id = str(row.get("client_board_id") or "")
         slug = known_slug_by_board_id.get(board_id, raw_slug)
         if not slug or slug not in reporting_by_slug:
@@ -1239,6 +1370,7 @@ def collect_agency_ops_rows(
         "agency_memory.monday_items": [],
         "agency_memory.monday_item_column_values": [],
         "agency_memory.client_registry": parse_client_registry(paths, client_board_rows, run_id, ingested_at),
+        "agency_memory.client_onboarding_profiles": parse_client_onboarding_profiles(paths, run_id=run_id, ingested_at=ingested_at),
         "agency_memory.client_board_map": parse_client_board_map_rows(client_board_rows, run_id, ingested_at),
         "agency_memory.task_alignment": parse_task_alignment_rows(task_alignment_rows, run_id, ingested_at, snapshot_date),
         "agency_memory.client_timeline_events": parse_timeline_events(paths.seo_clients, run_id, ingested_at),
@@ -1319,7 +1451,7 @@ def parse_client_board_map_rows(rows: list[dict[str, str]], run_id: str, ingeste
         {
             "ingested_at": ingested_at,
             "run_id": run_id,
-            "client_slug": row.get("client_slug") or slugify(row.get("client_name")),
+            "client_slug": canonical_client_slug(row.get("client_slug") or row.get("client_name")),
             "client_name": row.get("client_name") or "",
             "client_board_id": row.get("client_board_id") or None,
             "client_board_name": row.get("client_board_name") or None,
@@ -1676,9 +1808,9 @@ def is_safe_column_value(column_type: str, column_title: str, text_value: Any) -
 
 def infer_client_slug(board_name: str | None, item_name: str | None) -> str | None:
     if board_name and board_name not in {"SEO Tasks", "Client Board"}:
-        return slugify(board_name)
+        return canonical_client_slug(board_name)
     if item_name and "::" in item_name:
-        return slugify(item_name.split("::", 1)[0])
+        return canonical_client_slug(item_name.split("::", 1)[0])
     return None
 
 
@@ -1689,15 +1821,22 @@ def parse_client_registry(
     ingested_at: str,
 ) -> list[dict[str, Any]]:
     registry: dict[str, dict[str, Any]] = {}
+    favicon_overrides = load_client_favicon_overrides(paths.big_query / "config" / "client_favicons.json")
     for row in client_board_rows:
-        slug = row.get("client_slug") or slugify(row.get("client_name"))
+        slug = canonical_client_slug(row.get("client_slug") or row.get("client_name"))
         registry[slug] = {
             "ingested_at": ingested_at,
             "run_id": run_id,
             "client_slug": slug,
             "client_name": row.get("client_name") or slug,
+            "abn": None,
+            "primary_contact_name": None,
+            "primary_contact_role": None,
             "canonical_host": None,
             "website_hosts_json": None,
+            "favicon_url": None,
+            "favicon_source": None,
+            "favicon_candidates_json": None,
             "ga4_property": None,
             "search_console_json": None,
             "se_ranking_project_id": None,
@@ -1709,7 +1848,7 @@ def parse_client_registry(
 
     reporting_clients = load_reporting_clients(paths.reporting_config / "clients.json")
     for client in reporting_clients:
-        slug = client.get("slug") or slugify(client.get("name"))
+        slug = canonical_client_slug(client.get("slug") or client.get("name"))
         entry = registry.setdefault(
             slug,
             {
@@ -1717,8 +1856,14 @@ def parse_client_registry(
                 "run_id": run_id,
                 "client_slug": slug,
                 "client_name": client.get("name") or slug,
+                "abn": None,
+                "primary_contact_name": None,
+                "primary_contact_role": None,
                 "canonical_host": None,
                 "website_hosts_json": None,
+                "favicon_url": None,
+                "favicon_source": None,
+                "favicon_candidates_json": None,
                 "ga4_property": None,
                 "search_console_json": None,
                 "se_ranking_project_id": None,
@@ -1754,8 +1899,14 @@ def parse_client_registry(
                 "run_id": run_id,
                 "client_slug": slug,
                 "client_name": sidecar.get("brand_display_name") or slug,
+                "abn": None,
+                "primary_contact_name": None,
+                "primary_contact_role": None,
                 "canonical_host": None,
                 "website_hosts_json": None,
+                "favicon_url": None,
+                "favicon_source": None,
+                "favicon_candidates_json": None,
                 "ga4_property": None,
                 "search_console_json": None,
                 "se_ranking_project_id": None,
@@ -1765,7 +1916,11 @@ def parse_client_registry(
                 "status": "active",
             },
         )
+        profile = client_profile_fields(sidecar)
         entry["client_name"] = sidecar.get("brand_display_name") or entry.get("client_name") or slug
+        entry["abn"] = profile["abn"] or entry.get("abn")
+        entry["primary_contact_name"] = profile["primary_contact_name"] or entry.get("primary_contact_name")
+        entry["primary_contact_role"] = profile["primary_contact_role"] or entry.get("primary_contact_role")
         entry["canonical_host"] = sidecar.get("domain") or nested_get(sidecar, ("website", "canonical_host")) or entry.get("canonical_host")
         entry["ga4_property"] = str(sidecar.get("ga4_property") or entry.get("ga4_property") or "") or None
         entry["se_ranking_project_id"] = str(nested_get(sidecar, ("se_ranking", "project_id")) or entry.get("se_ranking_project_id") or "") or None
@@ -1775,8 +1930,112 @@ def parse_client_registry(
         entry["source_paths_json"]["seo_sidecar"] = str(sidecar_path)
 
     for entry in registry.values():
+        configured_candidates = favicon_overrides.get(str(entry.get("client_slug") or ""))
+        favicon_candidates = [*configured_candidates, *favicon_candidates_for_host(entry.get("canonical_host"))] if configured_candidates else favicon_candidates_for_host(entry.get("canonical_host"))
+        favicon_candidates = list(dict.fromkeys(favicon_candidates))
+        if favicon_candidates:
+            entry["favicon_url"] = favicon_candidates[0]
+            entry["favicon_source"] = "client_favicons_config" if configured_candidates else "canonical_host_candidates"
+            entry["favicon_candidates_json"] = json_dump(favicon_candidates)
         entry["source_paths_json"] = json_dump(entry.get("source_paths_json"))
     return sorted(registry.values(), key=lambda item: item["client_slug"])
+
+
+def load_client_favicon_overrides(path: Path) -> dict[str, list[str]]:
+    if not path.exists():
+        return {}
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return {}
+    clients = payload.get("clients") if isinstance(payload, dict) else {}
+    if not isinstance(clients, dict):
+        return {}
+    output: dict[str, list[str]] = {}
+    for slug, candidates in clients.items():
+        if not isinstance(candidates, list):
+            continue
+        safe_candidates = [
+            candidate.strip()
+            for candidate in candidates
+            if isinstance(candidate, str) and candidate.strip().startswith("https://")
+        ]
+        if safe_candidates:
+            output[slugify(slug)] = list(dict.fromkeys(safe_candidates))
+    return output
+
+
+def favicon_url_for_host(value: Any) -> str | None:
+    candidates = favicon_candidates_for_host(value)
+    return candidates[0] if candidates else None
+
+
+def favicon_candidates_for_host(value: Any) -> list[str]:
+    host = str(value or "").strip().lower()
+    if not host:
+        return []
+    host = host.removeprefix("https://").removeprefix("http://").split("/", 1)[0]
+    host = host.split("?", 1)[0].strip()
+    if not host or "." not in host or any(character.isspace() for character in host):
+        return []
+    apex_host = host.removeprefix("www.")
+    candidates = [
+        f"https://{host}/favicon.ico",
+        f"https://{host}/apple-touch-icon.png",
+        f"https://{host}/apple-touch-icon-precomposed.png",
+        f"https://icons.duckduckgo.com/ip3/{host}.ico",
+        f"https://www.google.com/s2/favicons?domain={host}&sz=128",
+    ]
+    if apex_host != host:
+        candidates.extend(
+            [
+                f"https://{apex_host}/favicon.ico",
+                f"https://icons.duckduckgo.com/ip3/{apex_host}.ico",
+                f"https://www.google.com/s2/favicons?domain={apex_host}&sz=128",
+            ]
+        )
+    return list(dict.fromkeys(candidates))
+
+
+def safe_profile_string(value: Any, *, max_length: int = 120) -> str | None:
+    if value in (None, "", []):
+        return None
+    text = str(value).strip()
+    if not text or len(text) > max_length:
+        return None
+    if "@" in text or "://" in text:
+        return None
+    return text
+
+
+def client_profile_fields(sidecar: dict[str, Any]) -> dict[str, str | None]:
+    contact = sidecar.get("primary_contact") if isinstance(sidecar.get("primary_contact"), dict) else {}
+    contact = contact or (sidecar.get("contact") if isinstance(sidecar.get("contact"), dict) else {})
+    business = sidecar.get("business") if isinstance(sidecar.get("business"), dict) else {}
+    profile = sidecar.get("profile") if isinstance(sidecar.get("profile"), dict) else {}
+    account = sidecar.get("account") if isinstance(sidecar.get("account"), dict) else {}
+    return {
+        "abn": safe_profile_string(
+            sidecar.get("abn")
+            or business.get("abn")
+            or profile.get("abn")
+            or account.get("abn"),
+            max_length=40,
+        ),
+        "primary_contact_name": safe_profile_string(
+            sidecar.get("primary_contact_name")
+            or contact.get("name")
+            or account.get("primary_contact_name")
+            or profile.get("primary_contact_name")
+        ),
+        "primary_contact_role": safe_profile_string(
+            sidecar.get("primary_contact_role")
+            or contact.get("role")
+            or contact.get("title")
+            or account.get("primary_contact_role")
+            or profile.get("primary_contact_role")
+        ),
+    }
 
 
 def load_reporting_clients(path: Path) -> list[dict[str, Any]]:
@@ -2057,7 +2316,7 @@ WITH recent AS (
     ) AS effective_thread_status,
     COALESCE(latest_event_at, TIMESTAMP(week_end), created_at) AS effective_latest_event_at
   FROM `{project}.{memory}.client_comms_weekly_summaries`
-  WHERE week_start >= DATE_SUB(CURRENT_DATE(), INTERVAL 13 MONTH)
+  WHERE week_start >= DATE_SUB(CURRENT_DATE('Australia/Melbourne'), INTERVAL 13 MONTH)
 ),
 latest_thread_state AS (
   SELECT *
@@ -2219,7 +2478,7 @@ SELECT
   run_id,
   created_at
 FROM `{project}.{memory}.client_comms_weekly_summaries`
-WHERE week_start >= DATE_SUB(CURRENT_DATE(), INTERVAL 13 MONTH)
+WHERE week_start >= DATE_SUB(CURRENT_DATE('Australia/Melbourne'), INTERVAL 13 MONTH)
 """
 
 
@@ -2296,7 +2555,7 @@ SELECT
       OR (r.completion_evidence_type IS NOT NULL AND r.completion_evidence_type != 'none' AND r.completion_confidence >= 0.4)
       OR m.source_id IS NOT NULL THEN 'completed'
     WHEN r.planned_status IN ('deferred', 'cancelled', 'blocked') THEN r.planned_status
-    WHEN r.due_date IS NOT NULL AND r.due_date < CURRENT_DATE() THEN 'overdue'
+    WHEN r.due_date IS NOT NULL AND r.due_date < CURRENT_DATE('Australia/Melbourne') THEN 'overdue'
     WHEN r.planned_status = 'in_progress' THEN 'in_progress'
     ELSE 'planned'
   END AS delivery_status,
@@ -2390,7 +2649,7 @@ clients AS (
 roadmap_clients AS (
   SELECT client_slug, COUNT(*) AS roadmap_item_count
   FROM `{project}.{memory}.client_roadmap_items`
-  WHERE planned_month >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 2 MONTH), MONTH)
+  WHERE planned_month >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Australia/Melbourne'), INTERVAL 2 MONTH), MONTH)
   GROUP BY client_slug
 ),
 latest_reports AS (
@@ -2539,14 +2798,21 @@ def build_reporting_marts(runner: CappedBigQueryRunner, config: BigQueryCostConf
     project = config.project_id
     memory = config.memory_dataset
     reporting = config.reporting_dataset
+    monday_item_client_slug_sql = canonical_client_slug_sql("i.client_slug")
     queries = {
         "client_task_status": f"""
 CREATE OR REPLACE TABLE `{project}.{reporting}.client_task_status`
 PARTITION BY snapshot_date AS
+WITH normalized_items AS (
+  SELECT
+    i.*,
+    {monday_item_client_slug_sql} AS canonical_client_slug
+  FROM `{project}.{memory}.monday_items` AS i
+)
 SELECT
   i.snapshot_date,
-  i.client_slug,
-  COALESCE(c.client_name, m.client_name, i.client_slug) AS client_name,
+  i.canonical_client_slug AS client_slug,
+  COALESCE(c.client_name, m.client_name, i.canonical_client_slug) AS client_name,
   CAST(i.board_id AS STRING) AS board_id,
   i.board_name,
   CAST(i.item_id AS STRING) AS item_id,
@@ -2558,10 +2824,10 @@ SELECT
   i.group_title,
   i.updated_at,
   i.normalized_status = 'Done' AS is_done,
-  IFNULL(i.due_date < CURRENT_DATE() AND i.normalized_status != 'Done', FALSE) AS is_overdue
-FROM `{project}.{memory}.monday_items` AS i
+  IFNULL(i.due_date < CURRENT_DATE('Australia/Melbourne') AND i.normalized_status != 'Done', FALSE) AS is_overdue
+FROM normalized_items AS i
 LEFT JOIN `{project}.{memory}.client_registry` AS c
-  ON i.client_slug = c.client_slug
+  ON i.canonical_client_slug = c.client_slug
 LEFT JOIN `{project}.{memory}.client_board_map` AS m
   ON i.board_id = m.client_board_id
 WHERE i.is_subitem = FALSE

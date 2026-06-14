@@ -26,6 +26,17 @@ If the delivery timeline is sparse, check recent task status as supporting conte
   --sql "SELECT client_slug, board_name, item_name, group_title, status, updated_at FROM \`seo-agency-work.agency_reporting.client_task_status\` WHERE client_slug = 'shop-rongrong' ORDER BY updated_at DESC LIMIT 25"
 ```
 
+## Client Goals And Priorities Context
+
+Use this before an agent recommends client work. It contains reviewed, sanitized onboarding context only, not raw Drive form answers.
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: client goals and priorities for shop-rongrong" \
+  --limit-preview 5 \
+  --sql "SELECT client_slug, client_name, business_summary, primary_goals_json, seo_priorities_json, target_audience, key_products_or_services_json, important_pages_json, constraints_or_risks_json, approval_preferences, reporting_expectations, agent_context_summary, review_status, confidence FROM \`seo-agency-work.agency_memory.client_onboarding_profiles\` WHERE client_slug = 'shop-rongrong' AND review_status IN ('reviewed', 'approved') QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY source_modified_at DESC NULLS LAST, ingested_at DESC) = 1"
+```
+
 ## Client Task Status
 
 ```bash

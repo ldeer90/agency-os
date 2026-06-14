@@ -1,0 +1,23 @@
+{
+  "crawl_id": "melani-the-label-baseline-2026-06-14",
+  "run_id": "melani-the-label-baseline-2026-06-14",
+  "crawl_date": "2026-06-14",
+  "client_slug": "melani-the-label",
+  "client_name": "Melani the Label",
+  "crawl_trigger": "monthly_baseline",
+  "trigger_ref": "user_request: crawl melani please",
+  "crawler": "screaming_frog_mcp",
+  "crawl_scope": "site_homepage_full_discovery",
+  "start_url": "https://melanithelabel.com",
+  "config_ref": null,
+  "robots_respected": true,
+  "crawl_status": "completed",
+  "pages_crawled": 490,
+  "export_manifest_path": "/Users/laurencedeer/seo_spider_mcp_server/data/crawl_memory/melani-the-label-baseline-2026-06-14.seospider.dbseospider",
+  "export_file_sha256": "3d73c89b2104f975b174a329807468eecde004bd4f5d36b08507633f0a896bf5",
+  "export_file_size_bytes": 1756879,
+  "retention_expires_on": "2027-12-14",
+  "raw_content_exported": false,
+  "visible_text_exported": false,
+  "notes": "Screaming Frog MCP crawl completed from the canonical Melani homepage. No raw HTML or visible-text bulk export was run."
+}

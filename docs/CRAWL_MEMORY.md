@@ -10,7 +10,7 @@ Keep an 18-month technical crawl history for active SEO clients so the SEO lead 
 - Did a completed task improve or damage crawlable site state?
 - Which technical issues are persistent, new, or resolved?
 
-BigQuery is the memory and comparison layer. It is not the crawl runner, raw export store, or source of truth for client site access.
+BigQuery is the memory and comparison layer. It is not the crawl runner, raw page-body archive, or source of truth for client site access.
 
 ## Cadence
 
@@ -32,13 +32,15 @@ Post-task verification:
 Store in BigQuery:
 
 - `agency_memory.client_crawl_runs`: crawl-level metadata, trigger, scope, counts, issue totals, manifest reference, and `retention_expires_on`.
-- `agency_memory.client_crawl_url_snapshots`: URL-level technical facts and issue flags needed for comparisons.
+- `agency_memory.client_crawl_url_snapshots`: typed core URL facts from `internal_all.csv`, plus `raw_row_json` preserving every original Screaming Frog field for that row.
+- `agency_memory.client_crawl_issue_rows`: typed issue fields from `issues_overview_report.csv` and `issues_reports/*.csv`, plus `raw_row_json`.
+- `agency_memory.client_crawl_link_rows`: typed inlink/outlink fields, plus `raw_row_json`.
+- `agency_memory.client_crawl_export_rows`: generic fallback storage for every allowed CSV/report row, including unknown exports, with `raw_row_json`.
 - `agency_reporting.client_crawl_latest`: latest usable crawl summary per client.
 - `agency_reporting.client_crawl_comparison`: current-vs-previous deltas for monthly and post-task checks.
 
 Do not store in BigQuery:
 
-- raw crawl exports
 - raw HTML or rendered HTML
 - visible page text
 - scraped page bodies
@@ -46,7 +48,7 @@ Do not store in BigQuery:
 - cookies, auth headers, request bodies, or response headers with secrets
 - complete export archives or zip payloads
 
-If raw exports are needed for diagnosis, store them only in the approved local or Drive destination after explicit approval for the site, scope, and destination. BigQuery should receive only the sanitized manifest path/ID and hashed source reference.
+Full crawl storage means all allowed Screaming Frog CSV/report fields are stored row-by-row in BigQuery. It does not mean storing `.dbseospider` archives, screenshots, raw HTML, visible text, cookies, request bodies, or other page-body/secret-bearing payloads.
 
 Plan the BigQuery crawl-memory tables without creating or updating anything:
 
@@ -64,6 +66,52 @@ Create or verify the approved crawl-memory tables only after the plan has been r
   --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env"
 ```
 
+Dry-run a full Screaming Frog export load:
+
+```bash
+.venv/bin/python scripts/load_screaming_frog_export.py \
+  --export-dir "/path/to/screaming-frog-export" \
+  --client-slug "client-slug" \
+  --client-name "Client Name" \
+  --crawl-id "client-slug-monthly-YYYY-MM-DD" \
+  --crawl-trigger monthly_baseline \
+  --crawl-scope full_site \
+  --min-urls 100 \
+  --dry-run
+```
+
+Load a validated export to BigQuery:
+
+```bash
+.venv/bin/python scripts/load_screaming_frog_export.py \
+  --export-dir "/path/to/screaming-frog-export" \
+  --client-slug "client-slug" \
+  --client-name "Client Name" \
+  --crawl-id "client-slug-monthly-YYYY-MM-DD" \
+  --crawl-trigger monthly_baseline \
+  --crawl-scope full_site \
+  --min-urls 100 \
+  --write-bigquery \
+  --ensure-tables \
+  --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env"
+```
+
+Partial or post-task crawls must be explicit:
+
+```bash
+.venv/bin/python scripts/load_screaming_frog_export.py \
+  --export-dir "/path/to/screaming-frog-export" \
+  --client-slug "client-slug" \
+  --crawl-id "client-slug-post-task-YYYY-MM-DD" \
+  --crawl-trigger post_task \
+  --crawl-scope partial_scope \
+  --scope-ref "task or affected URL set" \
+  --write-bigquery \
+  --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env"
+```
+
+Full-site/monthly loads fail coverage validation when `internal_all.csv` has fewer than `--min-urls` rows. Those runs may be stored as `coverage_failed` metadata, but detail rows are not loaded and latest/comparison tables are not promoted.
+
 ## Retention
 
 Retain crawl memory for 18 months from `crawl_date`.
@@ -78,6 +126,9 @@ Retention cleanup must delete expired rows from:
 
 - `agency_memory.client_crawl_runs`
 - `agency_memory.client_crawl_url_snapshots`
+- `agency_memory.client_crawl_issue_rows`
+- `agency_memory.client_crawl_link_rows`
+- `agency_memory.client_crawl_export_rows`
 
 Reporting tables should be rebuilt after cleanup.
 
