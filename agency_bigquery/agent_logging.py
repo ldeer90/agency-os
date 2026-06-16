@@ -8,6 +8,7 @@ from typing import Any
 
 from .capped_query_runner import CappedBigQueryRunner
 from .cost_config import BigQueryCostConfig
+from .langfuse_tracing import LangfuseTraceResult
 from .schema import TableSpec, agent_operating_table_specs, ensure_tables
 
 
@@ -50,6 +51,7 @@ def agent_logging_table_plans(config: BigQueryCostConfig) -> dict[str, LoggingTa
         "agent_actions": ("action_id",),
         "agent_approvals": ("approval_id",),
         "context_packs": ("context_id",),
+        "langfuse_trace_links": ("run_id",),
         "seo_workflow_catalog": ("skill_id", "workflow_id"),
         "seo_client_memory_summaries": ("client_slug",),
         "seo_workflow_run_summaries": ("run_id", "client_slug", "workflow_id"),
@@ -274,3 +276,78 @@ def log_agent_output(
         )
         loaded[table] = result.rows
     return loaded
+
+
+def build_llm_usage_row(
+    *,
+    run_row: dict[str, Any],
+    model: str | None = None,
+    input_tokens: int | None = None,
+    output_tokens: int | None = None,
+    cost_estimate_aud: float | None = None,
+    notes: str | None = None,
+    logged_at: str | None = None,
+    usage: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    usage = usage or {}
+    return {
+        "logged_at": logged_at or datetime.now(timezone.utc).isoformat(),
+        "run_id": run_row.get("run_id"),
+        "agent_id": run_row.get("agent_id"),
+        "model": model or usage.get("model"),
+        "prompt_version": run_row.get("prompt_version") or usage.get("prompt_version"),
+        "input_tokens": input_tokens if input_tokens is not None else usage.get("input_tokens") or usage.get("prompt_tokens"),
+        "output_tokens": output_tokens if output_tokens is not None else usage.get("output_tokens") or usage.get("completion_tokens"),
+        "cost_estimate_aud": cost_estimate_aud if cost_estimate_aud is not None else usage.get("cost_estimate_aud"),
+        "notes": notes or usage.get("notes"),
+    }
+
+
+def build_langfuse_trace_link_row(
+    *,
+    run_row: dict[str, Any],
+    trace_result: LangfuseTraceResult,
+    emitted_at: str | None = None,
+) -> dict[str, Any] | None:
+    if trace_result.status != "emitted" or not trace_result.trace_id:
+        return None
+    return {
+        "emitted_at": emitted_at or datetime.now(timezone.utc).isoformat(),
+        "run_id": run_row.get("run_id"),
+        "agent_id": run_row.get("agent_id"),
+        "automation_id": run_row.get("automation_id"),
+        "context_id": run_row.get("context_id"),
+        "prompt_version": run_row.get("prompt_version"),
+        "langfuse_trace_id": trace_result.trace_id,
+        "langfuse_trace_url": trace_result.trace_url,
+        "trace_status": trace_result.status,
+        "metadata_sha256": trace_result.metadata_sha256 or "",
+        "session_id": trace_result.session_id,
+        "error_message": trace_result.message,
+    }
+
+
+def log_langfuse_trace_link(
+    client: Any,
+    config: BigQueryCostConfig,
+    *,
+    run_row: dict[str, Any],
+    trace_result: LangfuseTraceResult,
+    dry_run: bool = True,
+    ensure_tables_first: bool = False,
+    batch_id: str | None = None,
+    purpose: str = "langfuse trace link write",
+) -> LoggingResult | None:
+    row = build_langfuse_trace_link_row(run_row=run_row, trace_result=trace_result)
+    if row is None:
+        return None
+    return log_rows_with_staging_merge(
+        client,
+        config,
+        "langfuse_trace_links",
+        [row],
+        dry_run=dry_run,
+        ensure_tables_first=ensure_tables_first,
+        batch_id=batch_id or str(run_row.get("run_id") or "langfuse"),
+        purpose=purpose,
+    )

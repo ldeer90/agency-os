@@ -223,6 +223,7 @@ The operating layer defines:
 
 - `agency_control.agent_run_log`
 - `agency_control.llm_usage_log`
+- `agency_control.langfuse_trace_links`
 - `agency_memory.agent_findings`
 - `agency_memory.agent_actions`
 - `agency_memory.agent_approvals`

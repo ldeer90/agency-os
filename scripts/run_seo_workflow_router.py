@@ -11,7 +11,7 @@ from uuid import uuid4
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from agency_bigquery.agent_logging import log_agent_output  # noqa: E402
+from agency_bigquery.agent_logging import log_agent_output, log_langfuse_trace_link  # noqa: E402
 from agency_bigquery.agent_ops import (  # noqa: E402
     build_agent_run_row,
     build_context_pack,
@@ -22,6 +22,15 @@ from agency_bigquery.agent_ops import (  # noqa: E402
 )
 from agency_bigquery.capped_query_runner import CappedBigQueryRunner  # noqa: E402
 from agency_bigquery.cost_config import DEFAULT_CONFIG_PATH, BigQueryCostConfig  # noqa: E402
+from agency_bigquery.langfuse_tracing import (  # noqa: E402
+    LANGFUSE_BASE_URL_ENV,
+    LANGFUSE_CAPTURE_PAYLOADS_ENV,
+    LANGFUSE_ENABLED_ENV,
+    LANGFUSE_HOST_ENV,
+    LANGFUSE_PUBLIC_KEY_ENV,
+    LANGFUSE_SECRET_KEY_ENV,
+    emit_agent_trace,
+)
 from agency_bigquery.seo_automation_catalog import (  # noqa: E402
     DEFAULT_SEO_AUTOMATION_ROOT,
     build_client_memory_summary_rows,
@@ -30,7 +39,16 @@ from agency_bigquery.seo_automation_catalog import (  # noqa: E402
 )
 
 
-SAFE_ENV_KEYS = {"GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT"}
+SAFE_ENV_KEYS = {
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "GOOGLE_CLOUD_PROJECT",
+    LANGFUSE_BASE_URL_ENV,
+    LANGFUSE_CAPTURE_PAYLOADS_ENV,
+    LANGFUSE_ENABLED_ENV,
+    LANGFUSE_HOST_ENV,
+    LANGFUSE_PUBLIC_KEY_ENV,
+    LANGFUSE_SECRET_KEY_ENV,
+}
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data" / "agent_runs" / "seo_workflow_router"
 DEFAULT_AGENT_RUN_INDEX = PROJECT_ROOT / "data" / "agent_runs" / "index.json"
 DEFAULT_ACTIVE_RUN_DIR = PROJECT_ROOT / "data" / "agent_runs" / "active"
@@ -172,12 +190,13 @@ def main() -> int:
             bigquery_write_status="succeeded" if should_write_bigquery else "dry_run",
         )
         loaded = None
+        bq_client = None
         if should_write_bigquery:
             from google.cloud import bigquery
 
-            client = bigquery.Client(project=config.project_id)
+            bq_client = bigquery.Client(project=config.project_id)
             loaded = log_agent_output(
-                client,
+                bq_client,
                 config,
                 run_row=run_row,
                 findings=output["findings"],
@@ -188,7 +207,32 @@ def main() -> int:
                 batch_id=run_id,
                 purpose="seo-workflow-router: log validated output",
             )
-        payload = {**output, "run_log": run_row, "context_pack": context_pack, "bigquery_loaded": loaded}
+        langfuse_trace = emit_agent_trace(
+            run_row=run_row,
+            findings=output["findings"],
+            actions=output["actions"],
+            context_pack=context_pack,
+            bigquery_project=config.project_id,
+            bigquery_dataset=config.control_dataset,
+        )
+        langfuse_link = log_langfuse_trace_link(
+            bq_client,
+            config,
+            run_row=run_row,
+            trace_result=langfuse_trace,
+            dry_run=not should_write_bigquery,
+            ensure_tables_first=args.ensure_tables,
+            batch_id=run_id,
+            purpose="seo-workflow-router: log langfuse trace link",
+        )
+        payload = {
+            **output,
+            "run_log": run_row,
+            "context_pack": context_pack,
+            "bigquery_loaded": loaded,
+            "langfuse_trace": langfuse_trace.__dict__,
+            "langfuse_link_loaded": langfuse_link.__dict__ if langfuse_link else None,
+        }
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
         complete_agent_run_lifecycle(
@@ -216,7 +260,23 @@ def main() -> int:
             run_json_path=str(output_path),
         )
         raise
-    print(json.dumps({"status": "succeeded", "run_id": run_id, "dry_run": not should_write_bigquery, "findings": len(output["findings"]), "actions": len(output["actions"]), "output_json": str(output_path), "bigquery_loaded": loaded}, indent=2, default=str))
+    print(
+        json.dumps(
+            {
+                "status": "succeeded",
+                "run_id": run_id,
+                "dry_run": not should_write_bigquery,
+                "findings": len(output["findings"]),
+                "actions": len(output["actions"]),
+                "output_json": str(output_path),
+                "bigquery_loaded": loaded,
+                "langfuse_trace": langfuse_trace.__dict__,
+                "langfuse_link_loaded": langfuse_link.__dict__ if langfuse_link else None,
+            },
+            indent=2,
+            default=str,
+        )
+    )
     return 0
 
 

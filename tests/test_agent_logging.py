@@ -7,12 +7,16 @@ from agency_bigquery.agent_logging import (
     AgentLoggingError,
     agent_logging_table_plans,
     build_merge_sql,
+    build_llm_usage_row,
+    build_langfuse_trace_link_row,
     log_agent_output,
+    log_langfuse_trace_link,
     log_rows_with_staging_merge,
     validate_logging_batch,
     json_safe_rows,
 )
 from agency_bigquery.cost_config import BigQueryCostConfig
+from agency_bigquery.langfuse_tracing import LangfuseTraceResult
 
 
 def test_config() -> BigQueryCostConfig:
@@ -128,6 +132,7 @@ class AgentLoggingTest(unittest.TestCase):
                 "agent_actions",
                 "agent_approvals",
                 "context_packs",
+                "langfuse_trace_links",
                 "seo_workflow_catalog",
                 "seo_client_memory_summaries",
                 "seo_workflow_readiness",
@@ -135,6 +140,7 @@ class AgentLoggingTest(unittest.TestCase):
             }.issubset(set(plans)),
         )
         self.assertEqual(("run_id",), plans["agent_run_log"].merge_keys)
+        self.assertEqual(("run_id",), plans["langfuse_trace_links"].merge_keys)
         self.assertEqual(("finding_id",), plans["agent_findings"].merge_keys)
         self.assertEqual(("skill_id", "workflow_id"), plans["seo_workflow_catalog"].merge_keys)
         self.assertEqual(("client_slug",), plans["seo_client_memory_summaries"].merge_keys)
@@ -220,6 +226,45 @@ class AgentLoggingTest(unittest.TestCase):
         self.assertEqual(loaded["agent_findings"], 1)
         self.assertEqual(loaded["agent_actions"], 0)
         self.assertEqual(loaded["context_packs"], 0)
+
+    def test_build_llm_usage_row_accepts_openai_style_usage(self) -> None:
+        row = build_llm_usage_row(
+            run_row=run_row(),
+            usage={"model": "gpt-test", "prompt_tokens": 10, "completion_tokens": 5, "cost_estimate_aud": 0.02},
+            logged_at="2026-06-13T00:02:00+00:00",
+        )
+
+        plan = agent_logging_table_plans(test_config())["llm_usage_log"]
+        validate_logging_batch(plan, [row])
+        self.assertEqual(row["prompt_version"], "promise_tracker/v001")
+        self.assertEqual(row["input_tokens"], 10)
+        self.assertEqual(row["output_tokens"], 5)
+
+    def test_langfuse_trace_link_validates_and_uses_run_id_merge_key(self) -> None:
+        trace = LangfuseTraceResult(
+            status="emitted",
+            enabled=True,
+            trace_id="trace-1",
+            trace_url="https://langfuse.test/trace/trace-1",
+            metadata_sha256="abc123",
+            session_id="automation-1",
+        )
+        row = build_langfuse_trace_link_row(run_row=run_row(), trace_result=trace, emitted_at="2026-06-13T00:02:00+00:00")
+        plan = agent_logging_table_plans(test_config())["langfuse_trace_links"]
+
+        validate_logging_batch(plan, [row])
+        self.assertEqual(row["run_id"], "run-1")
+        self.assertEqual(row["langfuse_trace_id"], "trace-1")
+
+        result = log_langfuse_trace_link(FakeClient(), test_config(), run_row=run_row(), trace_result=trace)
+        self.assertTrue(result.dry_run)
+        self.assertEqual(result.rows, 1)
+
+    def test_langfuse_trace_link_skips_failed_trace(self) -> None:
+        trace = LangfuseTraceResult(status="failed", enabled=True, trace_id="run-1", metadata_sha256="abc123")
+
+        self.assertIsNone(build_langfuse_trace_link_row(run_row=run_row(), trace_result=trace))
+        self.assertIsNone(log_langfuse_trace_link(FakeClient(), test_config(), run_row=run_row(), trace_result=trace))
 
 
 if __name__ == "__main__":
