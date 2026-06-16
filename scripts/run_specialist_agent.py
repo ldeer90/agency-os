@@ -21,6 +21,7 @@ from agency_bigquery.agent_ops import (  # noqa: E402
 )
 from agency_bigquery.capped_query_runner import CappedBigQueryRunner  # noqa: E402
 from agency_bigquery.cost_config import DEFAULT_CONFIG_PATH, BigQueryCostConfig  # noqa: E402
+from agency_bigquery.langfuse_tracing import emit_agent_trace  # noqa: E402
 from agency_bigquery.seo_automation_catalog import DEFAULT_SEO_AUTOMATION_ROOT  # noqa: E402
 from agency_bigquery.specialist_agents import (  # noqa: E402
     SPECIALIST_AGENT_CONFIGS,
@@ -363,7 +364,19 @@ def run(argv: list[str] | None = None) -> int:
                 batch_id=run_id,
                 purpose=f"{args.agent_id}: log validated output",
             )
-        payload = {**output, "run_log": run_row, "context_pack": context_pack, "bigquery_loaded": loaded}
+        langfuse_trace = emit_agent_trace(
+            run_row=run_row,
+            findings=output["findings"],
+            actions=output["actions"],
+            context_pack=context_pack,
+        )
+        payload = {
+            **output,
+            "run_log": run_row,
+            "context_pack": context_pack,
+            "bigquery_loaded": loaded,
+            "langfuse_trace": langfuse_trace.__dict__,
+        }
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
         complete_agent_run_lifecycle(
@@ -385,6 +398,7 @@ def run(argv: list[str] | None = None) -> int:
                     "actions": len(output["actions"]),
                     "output_json": str(output_path),
                     "bigquery_loaded": loaded,
+                    "langfuse_trace": langfuse_trace.__dict__,
                 },
                 indent=2,
                 default=str,

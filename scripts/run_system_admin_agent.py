@@ -23,6 +23,7 @@ from agency_bigquery.agent_ops import (  # noqa: E402
 )
 from agency_bigquery.capped_query_runner import CappedBigQueryRunner  # noqa: E402
 from agency_bigquery.cost_config import DEFAULT_CONFIG_PATH, BigQueryCostConfig, bytes_to_human  # noqa: E402
+from agency_bigquery.langfuse_tracing import emit_agent_trace  # noqa: E402
 from agency_bigquery.specialist_agents import (  # noqa: E402
     SPECIALIST_AGENT_CONFIGS,
     context_pack_for_output,
@@ -570,12 +571,19 @@ def run() -> int:
                 purpose="system_admin_agent: log validated output",
             )
 
+        langfuse_trace = emit_agent_trace(
+            run_row=run_row,
+            findings=output["findings"],
+            actions=output["actions"],
+            context_pack=context_pack,
+        )
         payload = {
             "output": output,
             "run_log": {**run_row, "output_path": str(output_json)},
             "context_pack": context_pack,
             "check_rows": rows,
             "bigquery_loaded": loaded,
+            "langfuse_trace": langfuse_trace.__dict__,
         }
         output_json.parent.mkdir(parents=True, exist_ok=True)
         output_json.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
@@ -621,8 +629,9 @@ def run() -> int:
                 "actions": len(output["actions"]),
                 "output_json": str(output_json),
                 "output_md": str(output_md),
-                "bigquery_loaded": loaded,
-            },
+                    "bigquery_loaded": loaded,
+                    "langfuse_trace": langfuse_trace.__dict__,
+                },
             indent=2,
             default=str,
         )
