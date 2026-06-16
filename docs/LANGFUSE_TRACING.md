@@ -32,8 +32,8 @@ The shared specialist runner and system-admin runner call `agency_bigquery.langf
 Examples:
 
 ```bash
-.venv/bin/python scripts/run_content_research_agent.py --local-context --dry-run
-.venv/bin/python scripts/run_system_admin_agent.py --local-only --dry-run
+.venv/bin/python scripts/run_content_research_agent.py --dry-run
+.venv/bin/python scripts/run_system_admin_agent.py --dry-run
 ```
 
 ## BigQuery Export Notes
