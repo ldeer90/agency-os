@@ -1240,6 +1240,22 @@ LLM_USAGE_LOG_SCHEMA: list[SchemaTuple] = [
 ]
 
 
+LANGFUSE_TRACE_LINKS_SCHEMA: list[SchemaTuple] = [
+    ("emitted_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("agent_id", "STRING", "REQUIRED"),
+    ("automation_id", "STRING", "NULLABLE"),
+    ("context_id", "STRING", "NULLABLE"),
+    ("prompt_version", "STRING", "NULLABLE"),
+    ("langfuse_trace_id", "STRING", "REQUIRED"),
+    ("langfuse_trace_url", "STRING", "NULLABLE"),
+    ("trace_status", "STRING", "REQUIRED"),
+    ("metadata_sha256", "STRING", "REQUIRED"),
+    ("session_id", "STRING", "NULLABLE"),
+    ("error_message", "STRING", "NULLABLE"),
+]
+
+
 SEO_WORKFLOW_CATALOG_SCHEMA: list[SchemaTuple] = [
     ("synced_at", "TIMESTAMP", "REQUIRED"),
     ("run_id", "STRING", "REQUIRED"),
@@ -1344,6 +1360,7 @@ def control_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
         TableSpec(config.control_dataset, "api_smoke_checks", API_SMOKE_CHECKS_SCHEMA),
         TableSpec(config.control_dataset, "agent_run_log", AGENT_RUN_LOG_SCHEMA, partition_field="started_at", cluster_fields=("agent_id", "status")),
         TableSpec(config.control_dataset, "llm_usage_log", LLM_USAGE_LOG_SCHEMA, partition_field="logged_at", cluster_fields=("agent_id", "model")),
+        TableSpec(config.control_dataset, "langfuse_trace_links", LANGFUSE_TRACE_LINKS_SCHEMA, partition_field="emitted_at", cluster_fields=("agent_id", "trace_status")),
     ]
 
 
@@ -1351,6 +1368,7 @@ def agent_operating_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
     return [
         TableSpec(config.control_dataset, "agent_run_log", AGENT_RUN_LOG_SCHEMA, partition_field="started_at", cluster_fields=("agent_id", "status")),
         TableSpec(config.control_dataset, "llm_usage_log", LLM_USAGE_LOG_SCHEMA, partition_field="logged_at", cluster_fields=("agent_id", "model")),
+        TableSpec(config.control_dataset, "langfuse_trace_links", LANGFUSE_TRACE_LINKS_SCHEMA, partition_field="emitted_at", cluster_fields=("agent_id", "trace_status")),
         TableSpec(config.memory_dataset, "agent_findings", AGENT_FINDINGS_SCHEMA, partition_field="created_at", cluster_fields=("client_slug", "agent_id", "qa_status")),
         TableSpec(config.memory_dataset, "agent_actions", AGENT_ACTIONS_SCHEMA, partition_field="created_at", cluster_fields=("client_slug", "target_system", "status")),
         TableSpec(config.memory_dataset, "agent_approvals", AGENT_APPROVALS_SCHEMA, partition_field="decided_at", cluster_fields=("client_slug", "decision")),
