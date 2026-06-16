@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
+import re
 import sys
 import time
 from threading import Lock
@@ -26,6 +27,8 @@ DEFAULT_REPORTS_PUBLIC_BASE_URL = "https://reports.laurencedeer.com.au"
 AGENT_INDEX_PATH = PROJECT_ROOT / "data" / "agent_runs" / "index.json"
 AGENT_RUNS_ROOT = PROJECT_ROOT / "data" / "agent_runs"
 DRIVE_VERIFICATIONS_PATH = PROJECT_ROOT / "data" / "client_health" / "drive_folder_verifications.json"
+FINANCE_RETAINERS_PATH = PROJECT_ROOT / "data" / "finance" / "client_retainers_2026.json"
+REPORTS_ROOT = PROJECT_ROOT / "reports"
 SEO_CLIENTS_PATH = Path("/Users/laurencedeer/Projects/Codex/SEO Automation/docs/agent/clients")
 CACHE_TTL_SECONDS = 120
 MELBOURNE_TIMEZONE = ZoneInfo("Australia/Melbourne")
@@ -54,6 +57,7 @@ EXCLUDED_CLIENT_NAME_FRAGMENTS = {
     "mr gadget",
     "mrgadget",
 }
+EMAIL_PATTERN = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
 
 
 def canonical_client_slug(value: Any) -> str:
@@ -162,7 +166,8 @@ def query_definitions(config: BigQueryCostConfig) -> dict[str, str]:
 SELECT snapshot_date, client_slug, client_name, expected_assets, present_assets, health_status, health_score, critical_missing_assets,
   missing_required_assets, latest_report_month, has_drive_root_verified, has_roadmap_content_validated,
   has_ga4_access, has_search_console_access, has_se_ranking_access, missing_required_json, missing_optional_json,
-  has_sidecar_json, has_client_brief, has_timeline, has_drive_root, has_roadmap_route, has_roadmap_files,
+  has_sidecar_json, has_client_brief, has_timeline, has_writing_style, has_brand_writing_guide_doc,
+  has_drive_root, has_roadmap_route, has_roadmap_files,
   has_content_route, has_reports_route, has_monday_board, has_reporting_config, has_monthly_report_snapshot, has_roadmap_items
 FROM `{project}.{reporting}.client_health_check`
 WHERE client_slug NOT IN ({excluded_slugs_sql})
@@ -384,6 +389,82 @@ QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY month_start DESC) <
 ORDER BY client_slug, month_start
 LIMIT 200
 """,
+        "finance": f"""
+SELECT period_id, month_start, client_slug, client_label, billing_status, retainer_amount_aud,
+  expense_amount_aud, net_amount_aud, is_billable, is_due, is_paid, is_issued, source_path AS source
+FROM `{project}.{memory}.client_finance_monthly`
+WHERE client_slug NOT IN ({excluded_slugs_sql})
+ORDER BY client_slug, month_start
+LIMIT 500
+""",
+        "finance_clients": f"""
+SELECT client_slug, client_name, client_label, finance_status, finance_score, due_amount_aud,
+  paid_due_amount_aud, issued_due_amount_aud, not_issued_due_amount_aud, retainer_total_aud,
+  expense_total_aud, net_total_aud, gross_margin_amount_aud, billable_months, due_months, not_issued_due_months,
+  collection_rate, invoice_coverage_rate, expense_ratio, gross_margin_rate, source_table AS source
+FROM `{project}.{reporting}.client_finance_health`
+WHERE client_slug NOT IN ({excluded_slugs_sql})
+QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY month_start DESC) = 1
+ORDER BY not_issued_due_amount_aud DESC, client_name
+LIMIT 100
+""",
+        "finance_monthly": f"""
+WITH retainers AS (
+  SELECT period_id, month_start,
+    SUM(IF(is_billable, retainer_amount_aud, 0)) AS retainer_amount_aud,
+    SUM(IF(is_billable, expense_amount_aud, 0)) AS client_expense_amount_aud,
+    SUM(IF(billing_status = 'paid', retainer_amount_aud, 0)) AS paid_amount_aud,
+    SUM(IF(billing_status = 'issued', retainer_amount_aud, 0)) AS issued_amount_aud,
+    SUM(IF(billing_status = 'not_issued', retainer_amount_aud, 0)) AS not_issued_amount_aud,
+    SUM(IF(billing_status = 'planned', retainer_amount_aud, 0)) AS planned_amount_aud,
+    COUNTIF(is_billable) AS billable_clients,
+    COUNTIF(billing_status = 'paid') AS paid_clients,
+    COUNTIF(billing_status = 'issued') AS issued_clients,
+    COUNTIF(billing_status = 'not_issued') AS not_issued_clients,
+    COUNTIF(billing_status = 'planned') AS planned_clients
+  FROM `{project}.{reporting}.client_finance_health`
+  WHERE client_slug NOT IN ({excluded_slugs_sql})
+  GROUP BY period_id, month_start
+),
+expenses AS (
+  SELECT period_id, month_start, SUM(IF(is_active, cost_per_month_aud, 0)) AS monday_expense_amount_aud
+  FROM `{project}.{memory}.agency_expenses_monthly`
+  GROUP BY period_id, month_start
+)
+SELECT
+  r.period_id,
+  r.month_start,
+  r.retainer_amount_aud,
+  IFNULL(r.client_expense_amount_aud, 0) + IFNULL(e.monday_expense_amount_aud, 0) AS expense_amount_aud,
+  r.retainer_amount_aud - IFNULL(r.client_expense_amount_aud, 0) - IFNULL(e.monday_expense_amount_aud, 0) AS net_amount_aud,
+  r.retainer_amount_aud - IFNULL(r.client_expense_amount_aud, 0) - IFNULL(e.monday_expense_amount_aud, 0) AS gross_margin_amount_aud,
+  SAFE_DIVIDE(r.retainer_amount_aud - IFNULL(r.client_expense_amount_aud, 0) - IFNULL(e.monday_expense_amount_aud, 0), NULLIF(r.retainer_amount_aud, 0)) AS gross_margin_rate,
+  r.paid_amount_aud,
+  r.issued_amount_aud,
+  r.not_issued_amount_aud,
+  r.planned_amount_aud,
+  r.billable_clients,
+  r.paid_clients,
+  r.issued_clients,
+  r.not_issued_clients,
+  r.planned_clients,
+  SAFE_DIVIDE(r.paid_amount_aud, NULLIF(r.retainer_amount_aud, 0)) AS collection_rate,
+  SAFE_DIVIDE(r.paid_amount_aud + r.issued_amount_aud, NULLIF(r.retainer_amount_aud, 0)) AS invoice_coverage_rate,
+  SAFE_DIVIDE(IFNULL(r.client_expense_amount_aud, 0) + IFNULL(e.monday_expense_amount_aud, 0), NULLIF(r.retainer_amount_aud, 0)) AS expense_ratio
+FROM retainers AS r
+LEFT JOIN expenses AS e
+  USING (period_id, month_start)
+ORDER BY month_start
+LIMIT 24
+""",
+        "finance_expenses": f"""
+SELECT period_id, month_start, expense_item_id, expense_name, cost_per_month_aud, start_date, renewal_date,
+  invoicing_schedule_date, invoice_agreement, is_active, source_path AS source
+FROM `{project}.{memory}.agency_expenses_monthly`
+WHERE is_active
+ORDER BY month_start, cost_per_month_aud DESC, expense_name
+LIMIT 500
+""",
         "comms": f"""
 SELECT week_start, week_end, client_slug, client_name, signal_type, severity, channel, category,
   summary, recommended_action, owner_hint, due_hint, latest_event_at
@@ -438,6 +519,22 @@ SELECT run_id, automation_id, agent_id, agent_name, started_at, completed_at, st
 FROM `{project}.{control}.agent_run_log`
 ORDER BY started_at DESC
 LIMIT 100
+""",
+        "agent_findings": f"""
+SELECT run_id, agent_id, client_slug, finding_type, severity, summary, recommended_action, confidence_score,
+  requires_human_review, qa_status, status, created_at
+FROM `{project}.{memory}.agent_findings`
+WHERE created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 45 DAY)
+ORDER BY created_at DESC
+LIMIT 300
+""",
+        "agent_actions": f"""
+SELECT run_id, agent_id, client_slug, action_type, target_system, recommended_action, priority, status,
+  requires_approval, due_hint, owner_hint, created_at
+FROM `{project}.{memory}.agent_actions`
+WHERE created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 45 DAY)
+ORDER BY created_at DESC
+LIMIT 300
 """,
         "workflow_runs": f"""
 SELECT completed_at, run_id, client_slug, workflow_id, agent_id, status, summary, outputs_json, blockers_json, next_actions_json
@@ -680,6 +777,81 @@ def safe_summary_text(value: Any, *, max_length: int = 260) -> str | None:
     return text
 
 
+def redact_public_text(value: str) -> str:
+    return EMAIL_PATTERN.sub("[redacted-email]", value)
+
+
+def markdown_sections(markdown: str) -> list[dict[str, Any]]:
+    sections: list[dict[str, Any]] = []
+    current: dict[str, Any] | None = None
+    for line in markdown.splitlines():
+        if line.startswith("## "):
+            if current:
+                current["body"] = "\n".join(current.pop("_lines")).strip()
+                sections.append(current)
+            current = {"heading": line.removeprefix("## ").strip(), "_lines": []}
+            continue
+        if current is not None:
+            current["_lines"].append(line)
+    if current:
+        current["body"] = "\n".join(current.pop("_lines")).strip()
+        sections.append(current)
+    return sections
+
+
+def brief_kind_for_path(path: Path) -> str:
+    if path.parent.name == "daily":
+        return "daily_agency_brief"
+    if path.parent.name == "system_admin":
+        return "system_admin_sweep"
+    return path.parent.name
+
+
+def read_brief_file(path: Path) -> dict[str, Any] | None:
+    reports_root = REPORTS_ROOT.resolve()
+    try:
+        resolved = path.resolve()
+    except OSError:
+        return None
+    if reports_root != resolved and reports_root not in resolved.parents:
+        return None
+    if resolved.suffix.lower() != ".md" or not resolved.exists() or resolved.stat().st_size > 250_000:
+        return None
+    try:
+        raw_markdown = resolved.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    markdown = redact_public_text(raw_markdown.strip())
+    if not markdown:
+        return None
+    first_heading = next((line.removeprefix("# ").strip() for line in markdown.splitlines() if line.startswith("# ")), resolved.stem)
+    sections = markdown_sections(markdown)
+    focus_section = next((section for section in sections if section.get("heading") == "Focus Today"), None)
+    summary = safe_summary_text((focus_section or {}).get("body") or first_heading, max_length=320)
+    return {
+        "brief_id": resolved.stem,
+        "kind": brief_kind_for_path(resolved),
+        "title": first_heading,
+        "summary": summary,
+        "generated_at": datetime.fromtimestamp(resolved.stat().st_mtime, MELBOURNE_TIMEZONE).replace(microsecond=0).isoformat(),
+        "path": str(resolved),
+        "relative_path": str(resolved.relative_to(PROJECT_ROOT)),
+        "markdown": markdown,
+        "sections": sections,
+        "section_count": len(sections),
+        "source": str(resolved.relative_to(PROJECT_ROOT)),
+    }
+
+
+def read_briefs(limit: int = 25) -> list[dict[str, Any]]:
+    paths: list[Path] = []
+    for folder in (REPORTS_ROOT / "daily", REPORTS_ROOT / "system_admin"):
+        if folder.exists():
+            paths.extend(folder.glob("*.md"))
+    briefs = [brief for path in paths if (brief := read_brief_file(path))]
+    return sorted(briefs, key=lambda row: str(row.get("generated_at") or ""), reverse=True)[:limit]
+
+
 def safe_agent_run_path(row: dict[str, Any]) -> Path | None:
     candidates: list[Path] = []
     for key in ("run_json_path", "output_path"):
@@ -729,7 +901,142 @@ def read_agent_run_detail(row: dict[str, Any]) -> dict[str, Any]:
             detail["task_name"] = f"Review {', '.join(action_types[:2]).title()}"
         elif finding_types:
             detail["task_name"] = f"Check {', '.join(finding_types[:2]).title()}"
+    detail["findings_preview"] = finding_preview_rows(findings)
+    detail["actions_preview"] = action_preview_rows(actions)
     return detail
+
+
+def finding_preview_rows(rows: list[Any], *, limit: int = 3) -> list[dict[str, Any]]:
+    previews: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        summary = safe_summary_text(row.get("summary"), max_length=180)
+        if not summary:
+            continue
+        previews.append(
+            {
+                "client_slug": row.get("client_slug"),
+                "type": title_from_identifier(row.get("finding_type")) or "Finding",
+                "severity": row.get("severity"),
+                "summary": summary,
+                "recommended_action": safe_summary_text(row.get("recommended_action"), max_length=180),
+                "status": row.get("qa_status") or row.get("status"),
+            }
+        )
+        if len(previews) >= limit:
+            break
+    return previews
+
+
+def action_preview_rows(rows: list[Any], *, limit: int = 3) -> list[dict[str, Any]]:
+    previews: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        action = safe_summary_text(row.get("recommended_action"), max_length=190)
+        if not action:
+            continue
+        previews.append(
+            {
+                "client_slug": row.get("client_slug"),
+                "type": title_from_identifier(row.get("action_type")) or "Action",
+                "target_system": row.get("target_system"),
+                "priority": row.get("priority"),
+                "status": row.get("status"),
+                "requires_approval": row.get("requires_approval"),
+                "recommended_action": action,
+            }
+        )
+        if len(previews) >= limit:
+            break
+    return previews
+
+
+def workflow_finding_preview_rows(row: dict[str, Any], *, limit: int = 3) -> list[dict[str, Any]]:
+    blockers = coerce_json(row.get("blockers_json"))
+    if not isinstance(blockers, list):
+        return []
+    previews: list[dict[str, Any]] = []
+    for blocker in blockers:
+        if isinstance(blocker, dict):
+            summary = safe_summary_text(
+                blocker.get("summary") or blocker.get("blocker") or blocker.get("reason") or blocker.get("message"),
+                max_length=180,
+            )
+            severity = blocker.get("severity") or blocker.get("priority") or "warning"
+            client_slug = blocker.get("client_slug") or row.get("client_slug")
+            finding_type = blocker.get("finding_type") or blocker.get("type") or row.get("workflow_id")
+        else:
+            summary = safe_summary_text(blocker, max_length=180)
+            severity = "warning"
+            client_slug = row.get("client_slug")
+            finding_type = row.get("workflow_id")
+        if not summary:
+            continue
+        previews.append(
+            {
+                "client_slug": client_slug,
+                "type": title_from_identifier(finding_type) or "Workflow blocker",
+                "severity": severity,
+                "summary": summary,
+                "recommended_action": None,
+                "status": row.get("status"),
+            }
+        )
+        if len(previews) >= limit:
+            break
+    return previews
+
+
+def workflow_action_preview_rows(row: dict[str, Any], *, limit: int = 3) -> list[dict[str, Any]]:
+    next_actions = coerce_json(row.get("next_actions_json"))
+    if not isinstance(next_actions, list):
+        return []
+    previews: list[dict[str, Any]] = []
+    for action in next_actions:
+        if isinstance(action, dict):
+            recommended_action = safe_summary_text(
+                action.get("recommended_action") or action.get("action") or action.get("summary") or action.get("title"),
+                max_length=190,
+            )
+            action_type = action.get("action_type") or action.get("type") or row.get("workflow_id")
+            priority = action.get("priority") or "medium"
+            target_system = action.get("target_system") or "workflow"
+            requires_approval = action.get("requires_approval")
+            client_slug = action.get("client_slug") or row.get("client_slug")
+        else:
+            recommended_action = safe_summary_text(action, max_length=190)
+            action_type = row.get("workflow_id")
+            priority = "medium"
+            target_system = "workflow"
+            requires_approval = None
+            client_slug = row.get("client_slug")
+        if not recommended_action:
+            continue
+        previews.append(
+            {
+                "client_slug": client_slug,
+                "type": title_from_identifier(action_type) or "Next action",
+                "target_system": target_system,
+                "priority": priority,
+                "status": row.get("status"),
+                "requires_approval": requires_approval,
+                "recommended_action": recommended_action,
+            }
+        )
+        if len(previews) >= limit:
+            break
+    return previews
+
+
+def group_agent_detail_rows(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        run_id = str(row.get("run_id") or "")
+        if run_id:
+            grouped.setdefault(run_id, []).append(row)
+    return grouped
 
 
 def agent_task_name(row: dict[str, Any], detail: dict[str, Any]) -> str:
@@ -772,8 +1079,11 @@ def agent_task_summary(row: dict[str, Any], detail: dict[str, Any]) -> str:
     return "Completed run; no short summary was recorded."
 
 
-def agent_task_row(row: dict[str, Any], source: str) -> dict[str, Any]:
+def agent_task_row(row: dict[str, Any], source: str, *, findings_by_run: dict[str, list[dict[str, Any]]] | None = None, actions_by_run: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, Any]:
     detail = read_agent_run_detail(row)
+    run_id = str(row.get("run_id") or "")
+    bq_findings = finding_preview_rows((findings_by_run or {}).get(run_id, [])) or workflow_finding_preview_rows(row)
+    bq_actions = action_preview_rows((actions_by_run or {}).get(run_id, [])) or workflow_action_preview_rows(row)
     return {
         "agent_id": row.get("agent_id"),
         "agent_name": row.get("agent_name") or row.get("agent_id"),
@@ -789,17 +1099,34 @@ def agent_task_row(row: dict[str, Any], source: str) -> dict[str, Any]:
         "client_slug": row.get("client_slug"),
         "task_name": agent_task_name(row, detail),
         "task_summary": agent_task_summary(row, detail),
+        "findings_preview": bq_findings or detail.get("findings_preview") or [],
+        "actions_preview": bq_actions or detail.get("actions_preview") or [],
         "metrics": detail.get("metrics") or {},
         "source": source,
     }
 
 
-def summarize_agent_activity(local_runs: list[dict[str, Any]], bq_runs: list[dict[str, Any]], workflow_runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def summarize_agent_activity(
+    local_runs: list[dict[str, Any]],
+    bq_runs: list[dict[str, Any]],
+    workflow_runs: list[dict[str, Any]],
+    findings: list[dict[str, Any]] | None = None,
+    actions: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    findings_by_run = group_agent_detail_rows(findings or [])
+    actions_by_run = group_agent_detail_rows(actions or [])
     for row in [*bq_runs, *local_runs]:
         if str(row.get("status") or "").lower() == "running":
             continue
-        rows.append(agent_task_row(row, "agency_control.agent_run_log" if row in bq_runs else "data/agent_runs/index.json"))
+        rows.append(
+            agent_task_row(
+                row,
+                "agency_control.agent_run_log" if row in bq_runs else "data/agent_runs/index.json",
+                findings_by_run=findings_by_run,
+                actions_by_run=actions_by_run,
+            )
+        )
     for row in workflow_runs:
         rows.append(agent_task_row({**row, "agent_name": row.get("agent_id"), "mode": "seo_workflow"}, "agency_memory.seo_workflow_run_summaries"))
     grouped: dict[str, dict[str, Any]] = {}
@@ -844,6 +1171,8 @@ def completed_agent_work_rows(summaries: list[dict[str, Any]]) -> list[dict[str,
                     "status": run.get("status"),
                     "findings_count": run.get("findings_count"),
                     "actions_count": run.get("actions_count"),
+                    "findings_preview": run.get("findings_preview") or [],
+                    "actions_preview": run.get("actions_preview") or [],
                     "workflow_id": run.get("workflow_id"),
                     "output_path": run.get("output_path"),
                     "source": run.get("source"),
@@ -1023,6 +1352,7 @@ def overview_details(payload: dict[str, Any]) -> dict[str, Any]:
         },
         "report_gap_clients": [row.get("client_slug") for row in report_missing],
         "performance_months": latest_months[-13:],
+        "finance_current_period": payload.get("finance_health", {}).get("current_period"),
         "recent_agent_runs": sum(len(row.get("recent_runs", [])) for row in payload.get("agent_activity_summary", [])),
         "source_tables": payload.get("meta", {}).get("source_tables", []),
     }
@@ -1045,6 +1375,263 @@ def safe_int(value: Any) -> int:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+def safe_float(value: Any) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def current_period_id() -> str:
+    return datetime.now(MELBOURNE_TIMEZONE).strftime("%Y-%m")
+
+
+def money_ratio(numerator: float, denominator: float, default: float = 1.0) -> float:
+    if denominator <= 0:
+        return default
+    return numerator / denominator
+
+
+def finance_status_label(score: float) -> str:
+    if score < 45:
+        return "critical"
+    if score < 70:
+        return "needs_attention"
+    if score < 85:
+        return "watch"
+    return "healthy"
+
+
+def read_finance_retainers(path: Path = FINANCE_RETAINERS_PATH) -> dict[str, Any]:
+    if not path.exists():
+        return {"source": str(path), "currency": "AUD", "rows": []}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {"source": str(path), "currency": "AUD", "rows": []}
+    rows = payload.get("rows") if isinstance(payload, dict) else []
+    return {
+        "source": payload.get("source") or str(path),
+        "currency": payload.get("currency") or "AUD",
+        "year": payload.get("year"),
+        "rows": rows if isinstance(rows, list) else [],
+    }
+
+
+def finance_rows_from_sheet(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    source = read_finance_retainers()
+    rows: list[dict[str, Any]] = []
+    for client in source.get("rows", []):
+        if not isinstance(client, dict):
+            continue
+        months = client.get("months") if isinstance(client.get("months"), dict) else {}
+        client_slug = canonical_client_slug(client.get("client_slug") or client.get("client_label"))
+        for period_id, month in sorted(months.items()):
+            if not isinstance(month, dict):
+                continue
+            retainer = safe_float(month.get("retainer_amount_aud"))
+            expense = safe_float(month.get("expense_amount_aud"))
+            status = str(month.get("status") or ("planned" if retainer else "not_client")).lower()
+            is_billable = retainer > 0 and status != "not_client"
+            row = {
+                "period_id": period_id,
+                "client_slug": client_slug,
+                "client_label": client.get("client_label"),
+                "billing_status": status,
+                "retainer_amount_aud": retainer,
+                "expense_amount_aud": expense,
+                "net_amount_aud": retainer - expense,
+                "is_billable": is_billable,
+                "is_due": is_billable and period_id <= current_period_id(),
+                "is_paid": status == "paid",
+                "is_issued": status in {"paid", "issued"},
+                "source": "data/finance/client_retainers_2026.json",
+            }
+            rows.append(row)
+    return filter_excluded_clients(rows)
+
+
+def build_finance(payload: dict[str, Any]) -> None:
+    finance_rows = finance_rows_from_sheet(payload)
+    monthly: dict[str, dict[str, Any]] = {}
+    by_client: dict[str, dict[str, Any]] = {}
+    current_period = current_period_id()
+    for row in finance_rows:
+        period = str(row.get("period_id") or "")
+        slug = str(row.get("client_slug") or "")
+        retainer = safe_float(row.get("retainer_amount_aud"))
+        expense = safe_float(row.get("expense_amount_aud"))
+        status = str(row.get("billing_status") or "")
+        month = monthly.setdefault(
+            period,
+            {
+                "period_id": period,
+                "retainer_amount_aud": 0.0,
+                "expense_amount_aud": 0.0,
+                "net_amount_aud": 0.0,
+                "paid_amount_aud": 0.0,
+                "issued_amount_aud": 0.0,
+                "not_issued_amount_aud": 0.0,
+                "planned_amount_aud": 0.0,
+                "billable_clients": 0,
+                "paid_clients": 0,
+                "issued_clients": 0,
+                "not_issued_clients": 0,
+                "planned_clients": 0,
+            },
+        )
+        client = by_client.setdefault(
+            slug,
+            {
+                "client_slug": slug,
+                "client_label": row.get("client_label"),
+                "retainer_amount_aud": 0.0,
+                "expense_amount_aud": 0.0,
+                "net_amount_aud": 0.0,
+                "due_amount_aud": 0.0,
+                "paid_due_amount_aud": 0.0,
+                "issued_due_amount_aud": 0.0,
+                "not_issued_due_amount_aud": 0.0,
+                "billable_months": 0,
+                "due_months": 0,
+                "not_issued_due_months": 0,
+                "source": "data/finance/client_retainers_2026.json",
+            },
+        )
+        if row.get("is_billable"):
+            month["billable_clients"] += 1
+            month["retainer_amount_aud"] += retainer
+            month["expense_amount_aud"] += expense
+            month["net_amount_aud"] += retainer - expense
+            client["retainer_amount_aud"] += retainer
+            client["expense_amount_aud"] += expense
+            client["net_amount_aud"] += retainer - expense
+            client["billable_months"] += 1
+        if status == "paid":
+            month["paid_amount_aud"] += retainer
+            month["paid_clients"] += 1
+        elif status == "issued":
+            month["issued_amount_aud"] += retainer
+            month["issued_clients"] += 1
+        elif status == "not_issued":
+            month["not_issued_amount_aud"] += retainer
+            month["not_issued_clients"] += 1
+        elif status == "planned":
+            month["planned_amount_aud"] += retainer
+            month["planned_clients"] += 1
+        if row.get("is_due"):
+            client["due_amount_aud"] += retainer
+            client["due_months"] += 1
+            if status == "paid":
+                client["paid_due_amount_aud"] += retainer
+            if status in {"paid", "issued"}:
+                client["issued_due_amount_aud"] += retainer
+            if status == "not_issued":
+                client["not_issued_due_amount_aud"] += retainer
+                client["not_issued_due_months"] += 1
+
+    monthly_rows = []
+    for row in sorted(monthly.values(), key=lambda item: str(item.get("period_id"))):
+        retainer = safe_float(row.get("retainer_amount_aud"))
+        row["collection_rate"] = money_ratio(safe_float(row.get("paid_amount_aud")), retainer)
+        row["invoice_coverage_rate"] = money_ratio(safe_float(row.get("paid_amount_aud")) + safe_float(row.get("issued_amount_aud")), retainer)
+        row["expense_ratio"] = money_ratio(safe_float(row.get("expense_amount_aud")), retainer, default=0.0)
+        monthly_rows.append(row)
+
+    client_rows = []
+    for row in sorted(by_client.values(), key=lambda item: str(item.get("client_label") or item.get("client_slug"))):
+        due = safe_float(row.get("due_amount_aud"))
+        row["collection_rate"] = money_ratio(safe_float(row.get("paid_due_amount_aud")), due)
+        row["invoice_coverage_rate"] = money_ratio(safe_float(row.get("issued_due_amount_aud")), due)
+        row["expense_ratio"] = money_ratio(safe_float(row.get("expense_amount_aud")), safe_float(row.get("retainer_amount_aud")), default=0.0)
+        row["finance_score"] = round((row["collection_rate"] * 55) + (row["invoice_coverage_rate"] * 30) + ((1 - min(row["expense_ratio"], 1)) * 15))
+        row["finance_status"] = finance_status_label(float(row["finance_score"]))
+        client_rows.append(row)
+
+    due_rows = [row for row in finance_rows if row.get("is_due")]
+    due_amount = sum(safe_float(row.get("retainer_amount_aud")) for row in due_rows if row.get("is_billable"))
+    paid_due = sum(safe_float(row.get("retainer_amount_aud")) for row in due_rows if row.get("is_paid"))
+    issued_due = sum(safe_float(row.get("retainer_amount_aud")) for row in due_rows if row.get("is_issued"))
+    expense_total = sum(safe_float(row.get("expense_amount_aud")) for row in finance_rows if row.get("is_billable"))
+    retainer_total = sum(safe_float(row.get("retainer_amount_aud")) for row in finance_rows if row.get("is_billable"))
+    collection_rate = money_ratio(paid_due, due_amount)
+    invoice_coverage_rate = money_ratio(issued_due, due_amount)
+    expense_ratio = money_ratio(expense_total, retainer_total, default=0.0)
+    score = round((collection_rate * 55) + (invoice_coverage_rate * 30) + ((1 - min(expense_ratio, 1)) * 15))
+    payload["finance"] = finance_rows
+    payload["finance_monthly"] = monthly_rows
+    payload["finance_clients"] = client_rows
+    payload["finance_health"] = {
+        "score": score,
+        "status": finance_status_label(score),
+        "current_period": current_period,
+        "currency": "AUD",
+        "due_amount_aud": due_amount,
+        "paid_due_amount_aud": paid_due,
+        "issued_due_amount_aud": issued_due,
+        "not_issued_due_amount_aud": sum(safe_float(row.get("retainer_amount_aud")) for row in due_rows if row.get("billing_status") == "not_issued"),
+        "retainer_total_aud": retainer_total,
+        "expense_total_aud": expense_total,
+        "net_total_aud": retainer_total - expense_total,
+        "gross_margin_amount_aud": retainer_total - expense_total,
+        "collection_rate": collection_rate,
+        "invoice_coverage_rate": invoice_coverage_rate,
+        "expense_ratio": expense_ratio,
+        "gross_margin_rate": 1 - min(expense_ratio, 1),
+        "component_scores": {
+            "collection": round(collection_rate * 100),
+            "invoicing": round(invoice_coverage_rate * 100),
+            "margin": round((1 - min(expense_ratio, 1)) * 100),
+        },
+        "source": "data/finance/client_retainers_2026.json",
+    }
+
+
+def build_finance_health_from_bq(payload: dict[str, Any]) -> None:
+    client_rows = payload.get("finance_clients", [])
+    finance_rows = payload.get("finance", [])
+    if not client_rows:
+        payload["finance_health"] = {}
+        return
+    due_amount = sum(safe_float(row.get("due_amount_aud")) for row in client_rows)
+    paid_due = sum(safe_float(row.get("paid_due_amount_aud")) for row in client_rows)
+    issued_due = sum(safe_float(row.get("issued_due_amount_aud")) for row in client_rows)
+    not_issued_due = sum(safe_float(row.get("not_issued_due_amount_aud")) for row in client_rows)
+    retainer_total = sum(safe_float(row.get("retainer_total_aud")) for row in client_rows)
+    monthly_rows = payload.get("finance_monthly", [])
+    expense_total = sum(safe_float(row.get("expense_amount_aud")) for row in monthly_rows) if monthly_rows else sum(safe_float(row.get("expense_total_aud")) for row in client_rows)
+    collection_rate = money_ratio(paid_due, due_amount)
+    invoice_coverage_rate = money_ratio(issued_due, due_amount)
+    expense_ratio = money_ratio(expense_total, retainer_total, default=0.0)
+    score = round((collection_rate * 55) + (invoice_coverage_rate * 30) + ((1 - min(expense_ratio, 1)) * 15))
+    payload["finance_health"] = {
+        "score": score,
+        "status": finance_status_label(score),
+        "current_period": current_period_id(),
+        "currency": "AUD",
+        "due_amount_aud": due_amount,
+        "paid_due_amount_aud": paid_due,
+        "issued_due_amount_aud": issued_due,
+        "not_issued_due_amount_aud": not_issued_due,
+        "retainer_total_aud": retainer_total,
+        "expense_total_aud": expense_total,
+        "net_total_aud": retainer_total - expense_total,
+        "gross_margin_amount_aud": retainer_total - expense_total,
+        "collection_rate": collection_rate,
+        "invoice_coverage_rate": invoice_coverage_rate,
+        "expense_ratio": expense_ratio,
+        "gross_margin_rate": 1 - min(expense_ratio, 1),
+        "component_scores": {
+            "collection": round(collection_rate * 100),
+            "invoicing": round(invoice_coverage_rate * 100),
+            "margin": round((1 - min(expense_ratio, 1)) * 100),
+        },
+        "source": "agency_reporting.client_finance_health",
+        "expense_source": "agency_memory.agency_expenses_monthly",
+        "rows": len(finance_rows),
+    }
 
 
 def active_client_maps(payload: dict[str, Any]) -> tuple[set[str], dict[str, str]]:
@@ -1151,6 +1738,7 @@ def build_client_details(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
     assets_by_client = group_by_client(payload.get("health_assets", []))
     delivery_by_client = group_by_client(payload.get("delivery", []))
     performance_by_client = group_by_client(payload.get("performance_history", []))
+    finance_by_client = group_by_client(payload.get("finance", []))
     roadmap_by_client = group_by_client(payload.get("roadmap_items", []))
     reports_by_client = group_by_client(payload.get("report_links", []))
     narratives_by_client = group_by_client(payload.get("report_narratives", []))
@@ -1208,6 +1796,7 @@ def build_client_details(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
             "roadmap_missing": not client.get("has_roadmap_items"),
             "roadmap_evidence_missing": not client.get("has_roadmap_content_validated"),
             "performance_history": performance_by_client.get(slug, []),
+            "finance": finance_by_client.get(slug, []),
             "delivery": delivery_by_client.get(slug, []),
             "comms": comms_by_client.get(slug, []),
             "comms_history": comms_history_by_client.get(slug, []),
@@ -1247,6 +1836,8 @@ def enrich_clients_with_registry(payload: dict[str, Any]) -> None:
         "api_smoke_checks",
         "agent_work_completed",
         "unified_timeline",
+        "finance",
+        "finance_clients",
     ):
         for client in payload.get(key, []):
             profile = profiles.get(str(client.get("client_slug") or ""))
@@ -1307,6 +1898,8 @@ def live_payload(load_env: bool = True) -> dict[str, Any]:
                 "agency_reporting.client_monthly_comparison",
                 "agency_reporting.client_monthly_performance_history",
                 "agency_reporting.client_benchmark_summary",
+                "agency_memory.client_finance_monthly",
+                "agency_reporting.client_finance_health",
                 "agency_reporting.client_comms_attention",
                 "agency_reporting.client_roadmap_current",
                 "agency_reporting.client_roadmap_monthly_completion",
@@ -1322,14 +1915,18 @@ def live_payload(load_env: bool = True) -> dict[str, Any]:
                 "agency_reporting.client_crawl_latest",
                 "agency_control.api_smoke_checks",
                 "data/client_health/drive_folder_verifications.json",
+                "data/finance/client_retainers_2026.json",
                 "agency_control.ingestion_runs",
                 "agency_control.cost_checks",
                 "data/agent_runs/index.json",
+                "reports/daily/*.md",
+                "reports/system_admin/*.md",
             ],
         },
         "agents": read_agent_index(),
+        "briefs": read_briefs(),
     }
-    optional_keys = {"agent_run_log", "workflow_runs", "client_context"}
+    optional_keys = {"agent_run_log", "agent_findings", "agent_actions", "workflow_runs", "client_context", "finance", "finance_clients", "finance_monthly", "finance_expenses"}
     for key, sql in definitions.items():
         try:
             _, rows = runner.run_query(sql, purpose=f"agency-health-dashboard: read {key}")
@@ -1355,9 +1952,15 @@ def live_payload(load_env: bool = True) -> dict[str, Any]:
         payload.get("agents", []),
         payload.get("agent_run_log", []),
         payload.get("workflow_runs", []),
+        payload.get("agent_findings", []),
+        payload.get("agent_actions", []),
     )
     payload["agent_work_completed"] = completed_agent_work_rows(payload["agent_activity_summary"])
     payload["drive_evidence"] = filter_excluded_clients(read_drive_evidence())
+    if payload.get("finance") or payload.get("finance_clients"):
+        build_finance_health_from_bq(payload)
+    else:
+        build_finance(payload)
     enrich_report_links(payload)
     enrich_clients_with_registry(payload)
     payload["unified_timeline"] = filter_excluded_clients(unified_timeline_rows(payload))
@@ -1399,6 +2002,17 @@ def needs_attention(payload: dict[str, Any]) -> list[dict[str, Any]]:
     for row in payload.get("comms", []):
         if str(row.get("severity") or "").lower() in {"high", "medium"}:
             items.append({"area": "Comms", "client_slug": row.get("client_slug"), "severity": row.get("severity"), "summary": row.get("summary"), "source": "agency_reporting.client_comms_attention"})
+    for row in payload.get("finance_clients", []):
+        if safe_float(row.get("not_issued_due_amount_aud")) > 0:
+            items.append(
+                {
+                    "area": "Finance",
+                    "client_slug": row.get("client_slug"),
+                    "severity": "high",
+                    "summary": f"{row.get('client_label') or row.get('client_slug')} has A${safe_int(row.get('not_issued_due_amount_aud')):,} due retainers not issued",
+                    "source": "data/finance/client_retainers_2026.json",
+                }
+            )
     for row in payload.get("drive_evidence", []):
         if row.get("folder_role") == "drive_roadmap_folder" and str(row.get("content_validation_status") or "").lower() not in {"present", "valid"}:
             items.append({"area": "Drive evidence", "client_slug": row.get("client_slug"), "severity": "high", "summary": "Roadmap folder lacks populated validated roadmap metadata", "source": "data/client_health/drive_folder_verifications.json"})

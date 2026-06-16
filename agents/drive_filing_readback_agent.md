@@ -1,5 +1,11 @@
 # Drive Filing Readback Agent
 
+## Identity
+
+When active, identify yourself as `drive_filing_readback_agent` in chat updates, delegated-task briefs, local run summaries, and final handoffs.
+
+Before work, read `AGENTS.md` and `docs/AGENT_POOL_REGISTRY.md`, load any matching project-required skills, and treat credential knowledge as sanitized location metadata only.
+
 ## Purpose
 
 Verify Drive route readiness and created-file readback metadata for reports, audits, content, and on-page SEO outputs without storing raw Drive, Docs, or Sheets contents.

@@ -360,6 +360,7 @@ class AgencyOpsIngestionTest(unittest.TestCase):
         self.assertEqual(statuses["client_monthly_comparison"], "succeeded")
         self.assertEqual(statuses["client_trailing_performance"], "succeeded")
         self.assertEqual(statuses["client_benchmark_summary"], "succeeded")
+        self.assertEqual(statuses["client_finance_health"], "succeeded")
         self.assertEqual(statuses["client_roadmap_current"], "succeeded")
         self.assertEqual(statuses["client_roadmap_monthly_completion"], "succeeded")
         purposes = {query["purpose"] for query in runner.queries}
@@ -371,6 +372,8 @@ class AgencyOpsIngestionTest(unittest.TestCase):
         self.assertIn("client_comms_attention", submitted_sql)
         self.assertIn("client_roadmap_monthly_completion", submitted_sql)
         self.assertIn("client_health_check", submitted_sql)
+        self.assertIn("client_finance_health", submitted_sql)
+        self.assertIn("agency_memory.client_finance_monthly", submitted_sql)
         self.assertIn("WHEN 'acorn-car-rentals' THEN 'acorn-rentals'", submitted_sql)
         self.assertIn("i.canonical_client_slug AS client_slug", submitted_sql)
 
@@ -621,7 +624,7 @@ class AgencyOpsIngestionTest(unittest.TestCase):
 
         slugs = {row["client_slug"] for row in rows}
         self.assertEqual(slugs, {slug for slug, _, _ in active_clients})
-        self.assertEqual(len(rows), 9 * 24)
+        self.assertEqual(len(rows), 9 * 25)
         self.assertNotIn("agents-digital", slugs)
         self.assertNotIn("bestvpn", slugs)
         self.assertNotIn("heiych", slugs)
@@ -667,6 +670,9 @@ class AgencyOpsIngestionTest(unittest.TestCase):
         self.assertIn("has_roadmap_files", sql)
         self.assertIn("has_roadmap_content_validated", sql)
         self.assertIn("has_ga4_access", sql)
+        self.assertIn("brand_writing_guide_doc", sql)
+        self.assertIn("has_writing_style", sql)
+        self.assertIn("has_brand_writing_guide_doc", sql)
 
     def test_comms_summary_normalizer_accepts_safe_summary_and_hashes_refs(self) -> None:
         row = normalize_comms_summary_row(

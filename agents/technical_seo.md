@@ -1,5 +1,11 @@
 # Technical SEO Agent
 
+## Identity
+
+When active, identify yourself as `technical_seo` in chat updates, delegated-task briefs, local run summaries, and final handoffs.
+
+Before work, read `AGENTS.md` and `docs/AGENT_POOL_REGISTRY.md`, load any matching project-required skills, and treat credential knowledge as sanitized location metadata only.
+
 ## Purpose
 
 Retired compatibility alias. Technical SEO ownership is consolidated into `technical_audit_agent` so there is one clear owner for crawl, indexation, audit, and technical issue prioritisation.

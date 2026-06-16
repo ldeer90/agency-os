@@ -11,9 +11,11 @@ venv/
 .env
 .env.*
 !.env.example
+.secrets/
 *.pem
 *.p12
 *.key
+*.log
 *service-account*.json
 *credentials*.json
 *client_secret*.json
@@ -21,13 +23,16 @@ token*.json
 
 # Local generated outputs
 data/agent_runs/
+data/sync_ops/
 data/comms_memory/staging/
 data/roadmap_memory/staging/
 data/client_health/*.json
 reports/daily/
 dashboard/web/node_modules/
 dashboard/web/dist/
+dashboard/web/public/dashboard-payload.json
 dashboard/web/tsconfig.tsbuildinfo
+dist-dashboard-subdomain/
 
 # OS/editor noise
 .DS_Store

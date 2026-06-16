@@ -155,6 +155,14 @@ def performance_score(performance: list[dict[str, Any]]) -> float:
     return average(values, default=75)
 
 
+def finance_score(finance_health: dict[str, Any]) -> float:
+    if not finance_health:
+        return 100
+    if finance_health.get("score") is not None:
+        return float(finance_health["score"])
+    return 100
+
+
 def data_health_score(data_health: dict[str, Any]) -> float:
     cost_failures = int(data_health.get("cost_failures") or 0)
     ingestion_failures = int(data_health.get("ingestion_failures") or 0)
@@ -176,16 +184,18 @@ def overall_health(payload: dict[str, Any]) -> dict[str, Any]:
         "comms": comms_score(payload.get("comms", [])),
         "roadmaps": roadmaps["score"],
         "performance": performance_score(payload.get("performance", [])),
+        "finance": finance_score(payload.get("finance_health", {})),
         "data_health": data_health_score(payload.get("data_health", {})),
     }
     weights = {
-        "client_setup": 0.20,
-        "reporting": 0.14,
-        "delivery": 0.16,
-        "comms": 0.12,
-        "roadmaps": 0.12,
-        "performance": 0.16,
-        "data_health": 0.10,
+        "client_setup": 0.18,
+        "reporting": 0.13,
+        "delivery": 0.15,
+        "comms": 0.11,
+        "roadmaps": 0.11,
+        "performance": 0.15,
+        "finance": 0.08,
+        "data_health": 0.09,
     }
     score = clamp_score(sum(components[key] * weights[key] for key in components))
     band = score_band(score)
@@ -196,5 +206,6 @@ def overall_health(payload: dict[str, Any]) -> dict[str, Any]:
         "components": {key: clamp_score(value) for key, value in components.items()},
         "component_details": {
             "roadmaps": {key: clamp_score(value) for key, value in roadmaps.items() if key != "score"},
+            "finance": payload.get("finance_health", {}).get("component_scores", {}),
         },
     }

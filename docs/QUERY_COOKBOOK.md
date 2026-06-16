@@ -267,6 +267,26 @@ Latest ingestion runs:
   --sql "SELECT run_id, source_id, status, started_at, completed_at, destination_table, rows_loaded, error_message FROM \`seo-agency-work.agency_control.ingestion_runs\` ORDER BY started_at DESC LIMIT 25"
 ```
 
+Client finance health:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: client finance health" \
+  --limit-preview 50 \
+  --sql "SELECT client_slug, client_name, finance_status, finance_score, due_amount_aud, paid_due_amount_aud, issued_due_amount_aud, not_issued_due_amount_aud, retainer_total_aud, expense_total_aud, collection_rate, invoice_coverage_rate, expense_ratio FROM \`seo-agency-work.agency_reporting.client_finance_health\` QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY month_start DESC) = 1 ORDER BY not_issued_due_amount_aud DESC, client_name"
+```
+
+Month-by-month agency margin:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: agency finance margin by month" \
+  --limit-preview 24 \
+  --sql "WITH retainers AS (SELECT period_id, month_start, SUM(IF(is_billable, retainer_amount_aud, 0)) AS retainer_amount_aud FROM \`seo-agency-work.agency_memory.client_finance_monthly\` GROUP BY period_id, month_start), expenses AS (SELECT period_id, SUM(IF(is_active, cost_per_month_aud, 0)) AS expense_amount_aud FROM \`seo-agency-work.agency_memory.agency_expenses_monthly\` GROUP BY period_id) SELECT r.period_id, r.month_start, r.retainer_amount_aud, COALESCE(e.expense_amount_aud, 0) AS expense_amount_aud, r.retainer_amount_aud - COALESCE(e.expense_amount_aud, 0) AS gross_margin_amount_aud, SAFE_DIVIDE(r.retainer_amount_aud - COALESCE(e.expense_amount_aud, 0), NULLIF(r.retainer_amount_aud, 0)) AS gross_margin_rate FROM retainers r LEFT JOIN expenses e USING (period_id) ORDER BY r.month_start"
+```
+
+Finance rows are sourced from `data/finance/client_retainers_2026.json` for historical invoice status and overlaid from the local Monday Client Board snapshot for current/future retainer amounts. Agency expense rows are sourced from the local Monday Expenses board snapshot and contain safe operating-cost metadata only.
+
 Latest cost checks:
 
 ```bash

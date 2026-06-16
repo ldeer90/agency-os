@@ -88,7 +88,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-id", default=None, help="Optional run ID. Defaults to a UUID hex.")
     parser.add_argument("--automation-id", default=os.environ.get("SEO_AGENCY_OS_AUTOMATION_ID"), help="Optional automation/workflow ID to carry into local run metadata.")
     parser.add_argument("--limit", type=int, default=100, help="Maximum rows per input area.")
-    parser.add_argument("--write-bigquery", action="store_true", help="Explicitly log validated run/context/findings/actions to BigQuery.")
+    parser.add_argument("--write-bigquery", action="store_true", help="Explicitly log validated run/context/findings/actions to BigQuery for local-context runs; BigQuery-context runs log by default unless --dry-run is used.")
+    parser.add_argument("--dry-run", action="store_true", help="Do not write completion metadata to BigQuery, even when reading live BigQuery context.")
     parser.add_argument("--ensure-tables", action="store_true", help="Create/verify agent operating tables before BigQuery logging.")
     parser.add_argument("--allow-local-context-live-log", action="store_true", help="Allow BigQuery logging from local context files for controlled tests.")
     return parser.parse_args()
@@ -358,7 +359,8 @@ def main() -> int:
     args = parse_args()
     permissions = load_agent_permissions(Path(args.permissions))
     validate_permissions_safe_default(permissions)
-    if args.write_bigquery and not args.from_bigquery and not args.allow_local_context_live_log:
+    should_write_bigquery = (args.write_bigquery or args.from_bigquery) and not args.dry_run
+    if should_write_bigquery and not args.from_bigquery and not args.allow_local_context_live_log:
         raise SystemExit("--write-bigquery requires --from-bigquery, or --allow-local-context-live-log for controlled local tests")
     brief_date = date.fromisoformat(args.date)
     run_id = args.run_id or uuid4().hex
@@ -391,7 +393,7 @@ def main() -> int:
             output_path=str(output_md),
             run_json_path=str(run_json),
             brief_path=str(output_md),
-            dry_run=not args.write_bigquery,
+            dry_run=not should_write_bigquery,
         ),
     )
 
@@ -451,15 +453,15 @@ def main() -> int:
         output_path=str(output_md),
         findings_count=len(output["findings"]),
         actions_count=len(output["actions"]),
-        dry_run=not args.write_bigquery,
-        bigquery_write_status="succeeded" if args.write_bigquery else "dry_run",
+        dry_run=not should_write_bigquery,
+        bigquery_write_status="succeeded" if should_write_bigquery else "dry_run",
     )
     output["run_log"] = run_row
     output["context_pack"] = context_pack
     output["automation_id"] = automation_id
 
     loaded = None
-    if args.write_bigquery:
+    if should_write_bigquery:
         if not permissions.allow_bigquery_logging:
             raise SystemExit("BigQuery logging is disabled in permissions.yaml")
         loaded = write_bigquery_output(config, output, run_row, context_pack, ensure_tables=args.ensure_tables)
@@ -483,7 +485,7 @@ def main() -> int:
             brief_path=str(output_md),
             findings_count=len(output["findings"]),
             actions_count=len(output["actions"]),
-            dry_run=not args.write_bigquery,
+            dry_run=not should_write_bigquery,
             bigquery_logged=bool(loaded),
         ),
     )
@@ -512,7 +514,7 @@ def main() -> int:
                 "status": "succeeded",
                 "run_id": run_id,
                 "automation_id": automation_id,
-                "dry_run": not args.write_bigquery,
+                "dry_run": not should_write_bigquery,
                 "brief": str(output_md),
                 "run_json": str(run_json),
                 "findings": len(output["findings"]),

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from dashboard.api.data import (
     agent_task_row,
+    build_finance,
     build_task_ops,
     build_client_details,
     canonical_client_slug,
@@ -194,6 +195,20 @@ class DashboardScoringTests(unittest.TestCase):
         self.assertEqual(distribution["Done"]["task_count"], 1)
         self.assertNotIn("stale sql row", distribution)
 
+    def test_build_finance_adds_monthly_client_and_health_rows(self) -> None:
+        payload = {"clients": [{"client_slug": "acorn-rentals", "client_name": "Acorn Rentals"}]}
+
+        with patch("dashboard.api.data.current_period_id", return_value="2026-06"):
+            build_finance(payload)
+
+        self.assertIn("finance_health", payload)
+        self.assertGreater(payload["finance_health"]["retainer_total_aud"], 0)
+        self.assertGreater(payload["finance_health"]["not_issued_due_amount_aud"], 0)
+        self.assertTrue(any(row["period_id"] == "2026-06" for row in payload["finance_monthly"]))
+        acorn = next(row for row in payload["finance_clients"] if row["client_slug"] == "acorn-rentals")
+        self.assertEqual(acorn["not_issued_due_amount_aud"], 1300)
+        self.assertIn(acorn["finance_status"], {"critical", "needs_attention", "watch", "healthy"})
+
     def test_filter_excluded_clients_checks_ops_drift_client_column(self) -> None:
         rows = [
             {"client": "BestVPN", "drift_issues": 10},
@@ -311,8 +326,27 @@ class DashboardScoringTests(unittest.TestCase):
                 json.dumps(
                     {
                         "summary": "Reviewed reporting readiness and queued two actions.",
-                        "findings": [{"finding_type": "reporting_gap"}],
-                        "actions": [{"action_type": "reporting_follow_up"}],
+                        "findings": [
+                            {
+                                "client_slug": "client-a",
+                                "finding_type": "reporting_gap",
+                                "severity": "medium",
+                                "summary": "Reporting source is missing.",
+                                "recommended_action": "Connect the missing source.",
+                                "qa_status": "needs_review",
+                            }
+                        ],
+                        "actions": [
+                            {
+                                "client_slug": "client-a",
+                                "action_type": "reporting_follow_up",
+                                "target_system": "monday",
+                                "priority": "medium",
+                                "recommended_action": "Create a draft-only follow-up task.",
+                                "requires_approval": True,
+                                "status": "suggested",
+                            }
+                        ],
                     }
                 ),
                 encoding="utf-8",
@@ -333,6 +367,59 @@ class DashboardScoringTests(unittest.TestCase):
         self.assertEqual(shaped["task_summary"], "Reviewed reporting readiness and queued two actions.")
         self.assertEqual(shaped["findings_count"], 1)
         self.assertEqual(shaped["actions_count"], 1)
+        self.assertEqual(shaped["findings_preview"][0]["summary"], "Reporting source is missing.")
+        self.assertEqual(shaped["actions_preview"][0]["recommended_action"], "Create a draft-only follow-up task.")
+
+    def test_agent_task_row_uses_bigquery_finding_and_action_previews(self) -> None:
+        shaped = agent_task_row(
+            {"agent_id": "agent-a", "agent_name": "Agent A", "run_id": "bq-1", "status": "succeeded"},
+            "agency_control.agent_run_log",
+            findings_by_run={
+                "bq-1": [
+                    {
+                        "client_slug": "client-a",
+                        "finding_type": "technical_gap",
+                        "severity": "high",
+                        "summary": "Crawl evidence is stale.",
+                        "recommended_action": "Rerun the crawl.",
+                        "qa_status": "needs_review",
+                    }
+                ]
+            },
+            actions_by_run={
+                "bq-1": [
+                    {
+                        "client_slug": "client-a",
+                        "action_type": "crawl_refresh",
+                        "target_system": "codex",
+                        "priority": "high",
+                        "recommended_action": "Run a fresh technical crawl.",
+                        "requires_approval": False,
+                        "status": "suggested",
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual(shaped["findings_preview"][0]["summary"], "Crawl evidence is stale.")
+        self.assertEqual(shaped["actions_preview"][0]["recommended_action"], "Run a fresh technical crawl.")
+
+    def test_agent_task_row_uses_workflow_summary_previews(self) -> None:
+        shaped = agent_task_row(
+            {
+                "agent_id": "seo_workflow_router",
+                "run_id": "wf-1",
+                "workflow_id": "content-brief",
+                "client_slug": "client-a",
+                "status": "succeeded",
+                "blockers_json": [{"summary": "Brief approval is still pending.", "severity": "medium"}],
+                "next_actions_json": [{"recommended_action": "Ask for approval before creating the Google Doc.", "priority": "medium"}],
+            },
+            "agency_memory.seo_workflow_run_summaries",
+        )
+
+        self.assertEqual(shaped["findings_preview"][0]["summary"], "Brief approval is still pending.")
+        self.assertEqual(shaped["actions_preview"][0]["recommended_action"], "Ask for approval before creating the Google Doc.")
 
     def test_overview_details_flags_missing_roadmaps_and_reports(self) -> None:
         details = overview_details(

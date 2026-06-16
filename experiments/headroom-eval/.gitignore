@@ -1,0 +1,3 @@
+.venv-headroom/
+__pycache__/
+*/__pycache__/

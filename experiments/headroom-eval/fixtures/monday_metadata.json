@@ -1,0 +1,512 @@
+{
+  "must_preserve": [
+    "little-shop-of-happiness",
+    "June roadmap approval follow-up",
+    "Blocked",
+    "2026-06-12"
+  ],
+  "privacy_level": "safe_task_metadata_no_updates",
+  "questions": [
+    "Which task is blocked?",
+    "Which client needs follow-up?",
+    "What date is overdue?"
+  ],
+  "rows": [
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-1",
+      "due_date": "2026-06-20",
+      "item_id": 700001,
+      "item_name": "SEO task metadata 1",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-2",
+      "due_date": "2026-06-20",
+      "item_id": 700002,
+      "item_name": "SEO task metadata 2",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-3",
+      "due_date": "2026-06-20",
+      "item_id": 700003,
+      "item_name": "SEO task metadata 3",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-4",
+      "due_date": "2026-06-20",
+      "item_id": 700004,
+      "item_name": "SEO task metadata 4",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-5",
+      "due_date": "2026-06-20",
+      "item_id": 700005,
+      "item_name": "SEO task metadata 5",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-6",
+      "due_date": "2026-06-20",
+      "item_id": 700006,
+      "item_name": "SEO task metadata 6",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-7",
+      "due_date": "2026-06-20",
+      "item_id": 700007,
+      "item_name": "SEO task metadata 7",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-8",
+      "due_date": "2026-06-20",
+      "item_id": 700008,
+      "item_name": "SEO task metadata 8",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-0",
+      "due_date": "2026-06-20",
+      "item_id": 700009,
+      "item_name": "SEO task metadata 9",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-1",
+      "due_date": "2026-06-20",
+      "item_id": 700010,
+      "item_name": "SEO task metadata 10",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-2",
+      "due_date": "2026-06-20",
+      "item_id": 700011,
+      "item_name": "SEO task metadata 11",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-3",
+      "due_date": "2026-06-20",
+      "item_id": 700012,
+      "item_name": "SEO task metadata 12",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-4",
+      "due_date": "2026-06-20",
+      "item_id": 700013,
+      "item_name": "SEO task metadata 13",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-5",
+      "due_date": "2026-06-20",
+      "item_id": 700014,
+      "item_name": "SEO task metadata 14",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-6",
+      "due_date": "2026-06-20",
+      "item_id": 700015,
+      "item_name": "SEO task metadata 15",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-7",
+      "due_date": "2026-06-20",
+      "item_id": 700016,
+      "item_name": "SEO task metadata 16",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-8",
+      "due_date": "2026-06-20",
+      "item_id": 700017,
+      "item_name": "SEO task metadata 17",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-0",
+      "due_date": "2026-06-20",
+      "item_id": 700018,
+      "item_name": "SEO task metadata 18",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-1",
+      "due_date": "2026-06-20",
+      "item_id": 700019,
+      "item_name": "SEO task metadata 19",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-2",
+      "due_date": "2026-06-20",
+      "item_id": 700020,
+      "item_name": "SEO task metadata 20",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-3",
+      "due_date": "2026-06-20",
+      "item_id": 700021,
+      "item_name": "SEO task metadata 21",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-4",
+      "due_date": "2026-06-20",
+      "item_id": 700022,
+      "item_name": "SEO task metadata 22",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-5",
+      "due_date": "2026-06-20",
+      "item_id": 700023,
+      "item_name": "SEO task metadata 23",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-6",
+      "due_date": "2026-06-20",
+      "item_id": 700024,
+      "item_name": "SEO task metadata 24",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-7",
+      "due_date": "2026-06-20",
+      "item_id": 700025,
+      "item_name": "SEO task metadata 25",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-8",
+      "due_date": "2026-06-20",
+      "item_id": 700026,
+      "item_name": "SEO task metadata 26",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-0",
+      "due_date": "2026-06-20",
+      "item_id": 700027,
+      "item_name": "SEO task metadata 27",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-1",
+      "due_date": "2026-06-20",
+      "item_id": 700028,
+      "item_name": "SEO task metadata 28",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-2",
+      "due_date": "2026-06-20",
+      "item_id": 700029,
+      "item_name": "SEO task metadata 29",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-3",
+      "due_date": "2026-06-20",
+      "item_id": 700030,
+      "item_name": "SEO task metadata 30",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-4",
+      "due_date": "2026-06-20",
+      "item_id": 700031,
+      "item_name": "SEO task metadata 31",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-5",
+      "due_date": "2026-06-20",
+      "item_id": 700032,
+      "item_name": "SEO task metadata 32",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-6",
+      "due_date": "2026-06-20",
+      "item_id": 700033,
+      "item_name": "SEO task metadata 33",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-7",
+      "due_date": "2026-06-20",
+      "item_id": 700034,
+      "item_name": "SEO task metadata 34",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-8",
+      "due_date": "2026-06-20",
+      "item_id": 700035,
+      "item_name": "SEO task metadata 35",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-0",
+      "due_date": "2026-06-20",
+      "item_id": 700036,
+      "item_name": "SEO task metadata 36",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-1",
+      "due_date": "2026-06-20",
+      "item_id": 700037,
+      "item_name": "SEO task metadata 37",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-2",
+      "due_date": "2026-06-20",
+      "item_id": 700038,
+      "item_name": "SEO task metadata 38",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-3",
+      "due_date": "2026-06-20",
+      "item_id": 700039,
+      "item_name": "SEO task metadata 39",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-4",
+      "due_date": "2026-06-20",
+      "item_id": 700040,
+      "item_name": "SEO task metadata 40",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-5",
+      "due_date": "2026-06-20",
+      "item_id": 700041,
+      "item_name": "SEO task metadata 41",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-6",
+      "due_date": "2026-06-20",
+      "item_id": 700042,
+      "item_name": "SEO task metadata 42",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-7",
+      "due_date": "2026-06-20",
+      "item_id": 700043,
+      "item_name": "SEO task metadata 43",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-8",
+      "due_date": "2026-06-20",
+      "item_id": 700044,
+      "item_name": "SEO task metadata 44",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-0",
+      "due_date": "2026-06-20",
+      "item_id": 700045,
+      "item_name": "SEO task metadata 45",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-1",
+      "due_date": "2026-06-20",
+      "item_id": 700046,
+      "item_name": "SEO task metadata 46",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-2",
+      "due_date": "2026-06-20",
+      "item_id": 700047,
+      "item_name": "SEO task metadata 47",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-3",
+      "due_date": "2026-06-20",
+      "item_id": 700048,
+      "item_name": "SEO task metadata 48",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-4",
+      "due_date": "2026-06-20",
+      "item_id": 700049,
+      "item_name": "SEO task metadata 49",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-5",
+      "due_date": "2026-06-20",
+      "item_id": 700050,
+      "item_name": "SEO task metadata 50",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-6",
+      "due_date": "2026-06-20",
+      "item_id": 700051,
+      "item_name": "SEO task metadata 51",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-7",
+      "due_date": "2026-06-20",
+      "item_id": 700052,
+      "item_name": "SEO task metadata 52",
+      "owner": "agency-team",
+      "status": "Working on it"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-8",
+      "due_date": "2026-06-20",
+      "item_id": 700053,
+      "item_name": "SEO task metadata 53",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "client-0",
+      "due_date": "2026-06-20",
+      "item_id": 700054,
+      "item_name": "SEO task metadata 54",
+      "owner": "agency-team",
+      "status": "Done"
+    },
+    {
+      "board_name": "Agency Delivery",
+      "client_slug": "little-shop-of-happiness",
+      "due_date": "2026-06-12",
+      "item_id": 799999,
+      "item_name": "June roadmap approval follow-up",
+      "owner": "agency-team",
+      "status": "Blocked"
+    }
+  ],
+  "workflow": "monday_metadata"
+}

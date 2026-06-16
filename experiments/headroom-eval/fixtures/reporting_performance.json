@@ -1,0 +1,306 @@
+{
+  "must_preserve": [
+    "ducati-melbourne",
+    "-0.62",
+    "route_changed",
+    "travelkon",
+    "0.41"
+  ],
+  "privacy_level": "summary_metrics_only",
+  "questions": [
+    "Which client dropped sharply?",
+    "Which client grew strongly?",
+    "What source-health warning exists?"
+  ],
+  "rows": [
+    {
+      "client_slug": "client-1",
+      "gsc_clicks": 508,
+      "organic_sessions": 1020,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-2",
+      "gsc_clicks": 516,
+      "organic_sessions": 1040,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-3",
+      "gsc_clicks": 524,
+      "organic_sessions": 1060,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-4",
+      "gsc_clicks": 532,
+      "organic_sessions": 1080,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-5",
+      "gsc_clicks": 540,
+      "organic_sessions": 1100,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-6",
+      "gsc_clicks": 548,
+      "organic_sessions": 1120,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-7",
+      "gsc_clicks": 556,
+      "organic_sessions": 1140,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-8",
+      "gsc_clicks": 564,
+      "organic_sessions": 1160,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-9",
+      "gsc_clicks": 572,
+      "organic_sessions": 1180,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-10",
+      "gsc_clicks": 580,
+      "organic_sessions": 1200,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-11",
+      "gsc_clicks": 588,
+      "organic_sessions": 1220,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-12",
+      "gsc_clicks": 596,
+      "organic_sessions": 1240,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-13",
+      "gsc_clicks": 604,
+      "organic_sessions": 1260,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-14",
+      "gsc_clicks": 612,
+      "organic_sessions": 1280,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-15",
+      "gsc_clicks": 620,
+      "organic_sessions": 1300,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-16",
+      "gsc_clicks": 628,
+      "organic_sessions": 1320,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-17",
+      "gsc_clicks": 636,
+      "organic_sessions": 1340,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-18",
+      "gsc_clicks": 644,
+      "organic_sessions": 1360,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-19",
+      "gsc_clicks": 652,
+      "organic_sessions": 1380,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-20",
+      "gsc_clicks": 660,
+      "organic_sessions": 1400,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-21",
+      "gsc_clicks": 668,
+      "organic_sessions": 1420,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-22",
+      "gsc_clicks": 676,
+      "organic_sessions": 1440,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-23",
+      "gsc_clicks": 684,
+      "organic_sessions": 1460,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-24",
+      "gsc_clicks": 692,
+      "organic_sessions": 1480,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-25",
+      "gsc_clicks": 700,
+      "organic_sessions": 1500,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-26",
+      "gsc_clicks": 708,
+      "organic_sessions": 1520,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-27",
+      "gsc_clicks": 716,
+      "organic_sessions": 1540,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-28",
+      "gsc_clicks": 724,
+      "organic_sessions": 1560,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-29",
+      "gsc_clicks": 732,
+      "organic_sessions": 1580,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-30",
+      "gsc_clicks": 740,
+      "organic_sessions": 1600,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-31",
+      "gsc_clicks": 748,
+      "organic_sessions": 1620,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-32",
+      "gsc_clicks": 756,
+      "organic_sessions": 1640,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-33",
+      "gsc_clicks": 764,
+      "organic_sessions": 1660,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "client-34",
+      "gsc_clicks": 772,
+      "organic_sessions": 1680,
+      "organic_sessions_mom_pct": 0.03,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    },
+    {
+      "client_slug": "ducati-melbourne",
+      "gsc_clicks": 210,
+      "organic_sessions": 420,
+      "organic_sessions_mom_pct": -0.62,
+      "period_id": "2026-05",
+      "source_health": "route_changed"
+    },
+    {
+      "client_slug": "travelkon",
+      "gsc_clicks": 4120,
+      "organic_sessions": 9820,
+      "organic_sessions_mom_pct": 0.41,
+      "period_id": "2026-05",
+      "source_health": "ok"
+    }
+  ],
+  "workflow": "reporting_performance"
+}

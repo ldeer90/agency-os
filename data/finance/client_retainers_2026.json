@@ -1,0 +1,200 @@
+{
+  "source": "user_provided_sheet_paste_2026_06_14",
+  "currency": "AUD",
+  "year": 2026,
+  "notes": "Retainer status and amount rows transcribed from Laurence's pasted sheet. Expense fields are included for dashboard calculations and default to 0 until an expenses source is provided. Forward projection assumes primary client retainers stay the same unless Laurence says otherwise. TravelKon is projected at 14200 from August 2026 for at least 6 months.",
+  "rows": [
+    {
+      "client_label": "Acorn",
+      "client_slug": "acorn-rentals",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-04": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-05": {"status": "issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Little Shop",
+      "client_slug": "little-shop-of-happiness",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-04": {"status": "paid", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-05": {"status": "issued", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "AVENUE",
+      "client_slug": "avenue-hampers",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-04": {"status": "paid", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-05": {"status": "issued", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 1800, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Harley",
+      "client_slug": "joe-rascal-harley",
+      "months": {
+        "2026-01": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-02": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-04": {"status": "issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-05": {"status": "not_issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Ducati",
+      "client_slug": "ducati-melbourne",
+      "months": {
+        "2026-01": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-02": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-04": {"status": "issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-05": {"status": "not_issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 1300, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Travelkon",
+      "client_slug": "travelkon",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-04": {"status": "paid", "retainer_amount_aud": 3400, "expense_amount_aud": 0},
+        "2026-05": {"status": "issued", "retainer_amount_aud": 3400, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 3400, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 3800, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 14200, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 14200, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 14200, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 14200, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 14200, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 14200, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Shoprong rong",
+      "client_slug": "shop-rongrong",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-04": {"status": "paid", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-05": {"status": "issued", "retainer_amount_aud": 1800, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 800, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 800, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Salad Servers",
+      "client_slug": "salad-servers-direct",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "paid", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-03": {"status": "paid", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-04": {"status": "paid", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-05": {"status": "issued", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-08": {"status": "planned", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-09": {"status": "planned", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-10": {"status": "planned", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-11": {"status": "planned", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2026-12": {"status": "planned", "retainer_amount_aud": 2600, "expense_amount_aud": 0},
+        "2027-01": {"status": "planned", "retainer_amount_aud": 2600, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Blank Theory",
+      "client_slug": "blank-theory",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-03": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-04": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-05": {"status": "issued", "retainer_amount_aud": 2100, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 130, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Melani the Label",
+      "client_slug": "melani-the-label",
+      "months": {
+        "2026-05": {"status": "issued", "retainer_amount_aud": 1550, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 1550, "expense_amount_aud": 0},
+        "2026-07": {"status": "planned", "retainer_amount_aud": 1550, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Stone Company",
+      "client_slug": "stone-company",
+      "months": {
+        "2026-01": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-02": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-03": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-04": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-05": {"status": "not_client", "retainer_amount_aud": 0, "expense_amount_aud": 0},
+        "2026-06": {"status": "not_issued", "retainer_amount_aud": 260, "expense_amount_aud": 0}
+      }
+    },
+    {
+      "client_label": "Car2U",
+      "client_slug": "car2u",
+      "months": {
+        "2026-06": {"status": "planned", "retainer_amount_aud": 2400, "expense_amount_aud": 0}
+      }
+    }
+  ]
+}

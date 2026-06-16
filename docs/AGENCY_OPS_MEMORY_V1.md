@@ -19,6 +19,8 @@ This workflow loads local agency-ops snapshots into BigQuery as a one-way memory
 | Monthly performance | SEO Reporting Platform report JSON | Reporting snapshot history |
 | Client roadmaps | SEO Automation roadmap workflow, client Drive roadmap folders, and staged summary-only roadmap JSONL | Structured agreed-work memory and monthly completion checks |
 | Client health assets | SEO Automation sidecars/briefs/timelines plus SEO Reporting config/report metadata | Presence/freshness checklist for the assets the agency brain expects |
+| Client finance retainers | Reviewed local finance JSON in `data/finance/client_retainers_2026.json` plus local Monday Client Board snapshot from `monday-agency-hub` | Historical invoice-status backfill plus current/future retainer projection |
+| Agency operating expenses | Local Monday Expenses board snapshot from `monday-agency-hub` | Monthly operating-cost memory for agency-level margin reporting only |
 | Client onboarding context | Reviewed, sanitized summaries of onboarding goals, priorities, audiences, constraints, and preferences | Agent/client dashboard briefing context only; no raw Drive form bodies |
 | SEO Automation workflow metadata | SEO Automation routing manifest, workflow docs, client sidecars, and sanitized timeline summaries | Workflow catalog, client readiness, and opportunity queues |
 | Technical crawl memory | Screaming Frog MCP/CLI summary exports, approved crawl manifests, and technical audit sidecars | 18-month crawl baseline, post-task comparison evidence, and issue-count reporting |
@@ -33,6 +35,8 @@ The V1 loader does not ingest monday item descriptions, updates, comments, or Dr
 For monday item column values, it keeps operational fields such as status, owner, dates, time tracking, and explicit client URLs. Free-text notes and email/phone/location-style fields are excluded from column-value rows. File columns are reduced to presence metadata.
 
 Client registry rows may store favicon display metadata from `config/client_favicons.json` or deterministic URLs derived from the approved public canonical host. This is limited to `favicon_url`, `favicon_source`, and `favicon_candidates_json`; the loader does not scrape site pages, download images, or store binary favicon content.
+
+Client finance rows store monthly status, retainer amount, client-specific expense placeholders, net amount, and derived billing flags. Current/future retainer rows are overlaid from the local Monday Client Board snapshot using safe commercial metadata only: client name, group, start date, retainer, invoice agreement, invoicing schedule, and agreed increase amount. Agency expense rows store only Monday expense item names, monthly cost, start/renewal dates, invoicing schedule date, agreement label, and active flags from the local Expenses board snapshot. They must not store invoice documents, raw accounting exports, private contact details, card/bank data, notes from private communications, Monday updates/comments/descriptions, or credential-like values.
 
 ## Client Onboarding Context Boundary
 
@@ -50,7 +54,7 @@ Allowed roadmap memory fields are client/month, item title, work type, priority,
 
 Client health records store metadata-only presence checks for the active recurring reporting clients in `seo-reporting-platform/config/clients.json`. The layer intentionally excludes internal projects, parent brands, pending clients, publisher/prospect entities, board-only Monday accounts, and support docs.
 
-For each active reporting client, health checks cover the assets the agency brain and agency operations expect: sidecar JSON, client brief, timeline, optional writing-style guide, Drive root/roadmap/content/report folder routes, verified Drive folders, verified populated roadmap files, bounded roadmap content validation, Monday board route and snapshot proof, reporting config, GA4/Search Console/SE Ranking routes and smoke checks, monthly report snapshot, and loaded roadmap items.
+For each active reporting client, health checks cover the assets the agency brain and agency operations expect: sidecar JSON, client brief, timeline, optional local writing-style guide, optional client-editable brand writing guide Google Doc metadata, Drive root/roadmap/content/report folder routes, verified Drive folders, verified populated roadmap files, bounded roadmap content validation, Monday board route and snapshot proof, reporting config, GA4/Search Console/SE Ranking routes and smoke checks, monthly report snapshot, and loaded roadmap items.
 
 Health rows may store local file paths, public/client platform IDs already present in approved sidecars/config, hashed source refs, file/folder metadata, freshness dates, and short operational notes. They must not store raw Drive/Docs/Sheets contents, Sheet cell values, client document bodies, Drive comments, permissions payloads, Monday updates/comments, email contents, credential values, or unredacted contact details.
 
@@ -125,6 +129,8 @@ Memory:
 - `agency_memory.client_roadmap_sources`
 - `agency_memory.client_roadmap_items`
 - `agency_memory.client_health_assets`
+- `agency_memory.client_finance_monthly`
+- `agency_memory.agency_expenses_monthly`
 - `agency_memory.client_crawl_runs`
 - `agency_memory.client_crawl_url_snapshots`
 - `agency_memory.client_crawl_issue_rows`
@@ -144,12 +150,26 @@ Reporting:
 - `agency_reporting.client_roadmap_current`
 - `agency_reporting.client_roadmap_monthly_completion`
 - `agency_reporting.client_health_check`
+- `agency_reporting.client_finance_health`
 - `agency_reporting.client_crawl_latest`
 - `agency_reporting.client_crawl_comparison`
 - `agency_reporting.reporting_readiness`
 - `agency_reporting.ops_drift_summary`
 
 All reporting marts are built through the capped BigQuery runner.
+
+## Client Finance Layer
+
+Local finance retainers load through:
+
+```bash
+.venv/bin/python scripts/load_client_finance.py --dry-run
+.venv/bin/python scripts/load_client_finance.py
+```
+
+The loader reads `data/finance/client_retainers_2026.json`, validates allowed billing statuses, overlays current/future retainer amounts from the local Monday Client Board snapshot, loads `agency_memory.client_finance_monthly`, reads safe fields from the local Monday Expenses board snapshot into `agency_memory.agency_expenses_monthly`, and rebuilds `agency_reporting.client_finance_health` through `CappedBigQueryRunner`.
+
+Client finance health balances collection, invoicing, and client-level retainer status. Agency margin reporting subtracts active monthly Monday expenses from monthly retainer totals; those operating costs are not allocated to individual clients unless a future approved allocation source is added.
 
 ## Monthly Performance Layer
 

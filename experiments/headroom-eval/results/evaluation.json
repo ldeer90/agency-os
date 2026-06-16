@@ -1,0 +1,97 @@
+[
+  {
+    "adopt_signal": true,
+    "answer_match": "same",
+    "compression_pct": 51.2,
+    "compression_ratio": 0.5125,
+    "fixture": "bigquery_health.json",
+    "latency_ms": 292,
+    "mode": "headroom",
+    "must_preserve_missing": [],
+    "privacy_flag": false,
+    "tokens_after": 1522,
+    "tokens_before": 3122,
+    "tokens_saved": 1600,
+    "transforms": [
+      "router:protected:user_message",
+      "router:smart_crusher:0.14"
+    ],
+    "workflow": "bigquery_health"
+  },
+  {
+    "adopt_signal": true,
+    "answer_match": "same",
+    "compression_pct": 62.1,
+    "compression_ratio": 0.6211,
+    "fixture": "crawl_summary.json",
+    "latency_ms": 29,
+    "mode": "headroom",
+    "must_preserve_missing": [],
+    "privacy_flag": false,
+    "tokens_after": 1694,
+    "tokens_before": 4471,
+    "tokens_saved": 2777,
+    "transforms": [
+      "router:protected:user_message",
+      "router:smart_crusher:0.01"
+    ],
+    "workflow": "crawl_summary"
+  },
+  {
+    "adopt_signal": true,
+    "answer_match": "same",
+    "compression_pct": 58.9,
+    "compression_ratio": 0.5888,
+    "fixture": "monday_metadata.json",
+    "latency_ms": 23,
+    "mode": "headroom",
+    "must_preserve_missing": [],
+    "privacy_flag": false,
+    "tokens_after": 1693,
+    "tokens_before": 4117,
+    "tokens_saved": 2424,
+    "transforms": [
+      "router:protected:user_message",
+      "router:mixed:0.22"
+    ],
+    "workflow": "monday_metadata"
+  },
+  {
+    "adopt_signal": true,
+    "answer_match": "same",
+    "compression_pct": 65.5,
+    "compression_ratio": 0.6548,
+    "fixture": "reporting_performance.json",
+    "latency_ms": 22,
+    "mode": "headroom",
+    "must_preserve_missing": [],
+    "privacy_flag": false,
+    "tokens_after": 853,
+    "tokens_before": 2471,
+    "tokens_saved": 1618,
+    "transforms": [
+      "router:protected:user_message",
+      "router:smart_crusher:0.02"
+    ],
+    "workflow": "reporting_performance"
+  },
+  {
+    "adopt_signal": true,
+    "answer_match": "same",
+    "compression_pct": 90.2,
+    "compression_ratio": 0.9024,
+    "fixture": "terminal_logs.json",
+    "latency_ms": 23,
+    "mode": "headroom",
+    "must_preserve_missing": [],
+    "privacy_flag": false,
+    "tokens_after": 366,
+    "tokens_before": 3749,
+    "tokens_saved": 3383,
+    "transforms": [
+      "router:protected:user_message",
+      "router:smart_crusher:0.08"
+    ],
+    "workflow": "terminal_logs"
+  }
+]

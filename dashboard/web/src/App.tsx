@@ -1,17 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   Bot,
   BriefcaseBusiness,
   CalendarClock,
+  CheckCircle2,
+  CircleDot,
+  ClipboardList,
   DatabaseZap,
+  DollarSign,
   ExternalLink,
   FileCheck2,
+  FileText,
   HeartPulse,
   MessageSquareWarning,
+  Play,
   RefreshCw,
   Route,
+  Send,
+  TimerReset,
   Users
 } from "lucide-react";
 import {
@@ -31,10 +40,14 @@ import {
 } from "recharts";
 import { DataTable } from "./components/DataTable";
 import { Badge, Button, MetricCard, Panel } from "./components/Ui";
-import { formatMelbourneDateTime, formatNumber, formatPercent, MELBOURNE_TIME_ZONE, statusTone } from "./lib/utils";
-import type { AgentActivitySummary, ClientDetail, DashboardPayload, Row } from "./types/dashboard";
+import { cn, formatMelbourneDateTime, formatNumber, formatPercent, humanizeLabel, humanizeValue, MELBOURNE_TIME_ZONE, statusTone } from "./lib/utils";
+import type { AgentActivitySummary, ClientDetail, DashboardPayload, Row, SyncCommandState, SyncDefinition, SyncPayload } from "./types/dashboard";
 
-const API_URL = "http://127.0.0.1:8787/api/dashboard";
+const PUBLIC_STATIC_MODE = import.meta.env.VITE_PUBLIC_STATIC_DASHBOARD === "1";
+const DASHBOARD_DATA_URL = import.meta.env.VITE_DASHBOARD_DATA_URL ?? (PUBLIC_STATIC_MODE ? "/dashboard-payload.json" : "");
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787";
+const API_URL = `${API_BASE_URL}/api/dashboard`;
+const SYNC_API_URL = `${API_BASE_URL}/api/syncs`;
 
 const nav = [
   { id: "overview", label: "Overview", icon: HeartPulse },
@@ -42,10 +55,13 @@ const nav = [
   { id: "timeline", label: "Timeline", icon: CalendarClock },
   { id: "delivery", label: "Delivery", icon: BriefcaseBusiness },
   { id: "performance", label: "Performance", icon: BarChart3 },
+  { id: "finance", label: "Finance", icon: DollarSign },
   { id: "comms", label: "Comms", icon: MessageSquareWarning },
   { id: "roadmaps", label: "Roadmaps", icon: Route },
   { id: "reporting", label: "Reporting", icon: FileCheck2 },
+  { id: "briefs", label: "Briefs", icon: FileText },
   { id: "agents", label: "Agents", icon: Bot },
+  ...(!PUBLIC_STATIC_MODE ? [{ id: "syncs", label: "Syncs", icon: Send }] : []),
   { id: "data", label: "Data Health", icon: DatabaseZap }
 ];
 
@@ -66,13 +82,18 @@ function colorForStatus(status: unknown) {
   return "#64748b";
 }
 
-function countBy(rows: Row[], key: string) {
-  const counts = new Map<string, number>();
+type CountRow = { name: string; raw_name: string; value: number };
+
+function countBy(rows: Row[], key: string): CountRow[] {
+  const counts = new Map<string, { name: string; raw_name: string; value: number }>();
   rows.forEach((row) => {
-    const label = String(row[key] ?? "unknown");
-    counts.set(label, (counts.get(label) ?? 0) + 1);
+    const raw = String(row[key] ?? "unknown");
+    const label = humanizeValue(raw);
+    const current = counts.get(raw) ?? { name: label, raw_name: raw, value: 0 };
+    current.value += 1;
+    counts.set(raw, current);
   });
-  return Array.from(counts, ([name, value]) => ({ name, value }));
+  return Array.from(counts.values());
 }
 
 function uniqueValues(rows: Row[], key: string) {
@@ -81,14 +102,13 @@ function uniqueValues(rows: Row[], key: string) {
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  return String(value);
+  return humanizeValue(value);
 }
 
 function drilldownLabel(drilldown?: Drilldown | null) {
   if (!drilldown) return "";
   if (drilldown.label) return drilldown.label;
-  const focus = String(drilldown.focus ?? "details").replaceAll("_", " ");
+  const focus = humanizeLabel(drilldown.focus ?? "details");
   return `Showing: ${focus}`;
 }
 
@@ -167,6 +187,12 @@ function formatMetricValue(value: unknown, kind: string) {
   if (kind === "percent") return formatPercent(numeric);
   if (kind === "decimal") return numeric.toFixed(1);
   return formatNumber(numeric);
+}
+
+function formatCurrency(value: unknown) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "—";
+  return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(numeric);
 }
 
 function formatChange(current: unknown, comparison: unknown) {
@@ -312,10 +338,11 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(forceRefresh ? `${API_URL}?refresh=1` : API_URL);
+      const url = PUBLIC_STATIC_MODE ? `${DASHBOARD_DATA_URL}${forceRefresh ? `?v=${Date.now()}` : ""}` : forceRefresh ? `${API_URL}?refresh=1` : API_URL;
+      const response = await fetch(url);
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        throw new Error(body?.error ?? `API returned ${response.status}`);
+        throw new Error(body?.error ?? `Dashboard data returned ${response.status}`);
       }
       const nextPayload = await response.json();
       setPayload(nextPayload);
@@ -334,7 +361,7 @@ function App() {
 
   const healthDistribution = useMemo(() => countBy(payload?.clients ?? [], "health_status"), [payload]);
   const componentRows = useMemo(
-    () => Object.entries(payload?.overview.components ?? {}).map(([name, score]) => ({ name: name.replaceAll("_", " "), score })),
+    () => Object.entries(payload?.overview.components ?? {}).map(([name, score]) => ({ name: humanizeLabel(name), score })),
     [payload]
   );
 
@@ -342,9 +369,9 @@ function App() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
         <Panel className="max-w-xl">
-          <h1 className="text-lg font-semibold text-slate-950">Dashboard API unavailable</h1>
+          <h1 className="text-lg font-semibold text-slate-950">{PUBLIC_STATIC_MODE ? "Dashboard data unavailable" : "Dashboard API unavailable"}</h1>
           <p className="mt-2 text-sm text-slate-600">{error}</p>
-          <p className="mt-2 text-sm text-slate-600">Run `.venv/bin/python -m dashboard.api.server` from the project root, then refresh.</p>
+          {!PUBLIC_STATIC_MODE && <p className="mt-2 text-sm text-slate-600">Run `.venv/bin/python -m dashboard.api.server` from the project root, then refresh.</p>}
           <Button className="mt-4" onClick={() => load()}>Retry</Button>
         </Panel>
       </main>
@@ -377,12 +404,12 @@ function App() {
             <div>
               <h1 className="text-xl font-semibold">Agency Health Dashboard</h1>
               <p className="text-sm text-slate-500">
-                {payload?.meta.environment ?? "Loading"} · {formatMelbourneDateTime(payload?.meta.generated_at)}
+                {PUBLIC_STATIC_MODE ? "Published static snapshot" : payload?.meta.environment ?? "Loading"} · {formatMelbourneDateTime(payload?.meta.generated_at)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {payload && <Badge tone="success">{payload.meta.data_source_status}</Badge>}
-              <Button onClick={() => load(true)} disabled={loading}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button>
+              {payload && <Badge tone="success">{text(payload.meta.data_source_status)}</Badge>}
+              <Button onClick={() => load(true)} disabled={loading}><RefreshCw className="mr-2 h-4 w-4" />{PUBLIC_STATIC_MODE ? "Reload Snapshot" : "Refresh"}</Button>
             </div>
           </div>
         </header>
@@ -398,10 +425,13 @@ function App() {
               {active === "timeline" && <TimelineView payload={payload} />}
               {active === "delivery" && <DeliveryView payload={payload} drilldown={drilldown?.view === "delivery" ? drilldown : null} onClearDrilldown={() => setDrilldown(null)} />}
               {active === "performance" && <PerformanceView payload={payload} />}
+              {active === "finance" && <FinanceView payload={payload} drilldown={drilldown?.view === "finance" ? drilldown : null} onClearDrilldown={() => setDrilldown(null)} />}
               {active === "comms" && <div className="space-y-4"><FocusBanner drilldown={drilldown?.view === "comms" ? drilldown : null} onClear={() => setDrilldown(null)} /><TableView title="Comms Attention" rows={payload.comms} columns={["week_start", "client_slug", "signal_type", "severity", "channel", "category", "summary", "recommended_action", "owner_hint"]} clientRows={payload.clients} /></div>}
               {active === "roadmaps" && <RoadmapsView payload={payload} drilldown={drilldown?.view === "roadmaps" ? drilldown : null} onClearDrilldown={() => setDrilldown(null)} />}
               {active === "reporting" && <ReportingView payload={payload} drilldown={drilldown?.view === "reporting" ? drilldown : null} onClearDrilldown={() => setDrilldown(null)} />}
+              {active === "briefs" && <BriefsView briefs={payload.briefs ?? []} />}
               {active === "agents" && <AgentsView summaries={payload.agent_activity_summary ?? []} completedWork={payload.agent_work_completed ?? []} rawRuns={payload.agents} clientRows={payload.clients} drilldown={drilldown?.view === "agents" ? drilldown : null} onClearDrilldown={() => setDrilldown(null)} />}
+              {!PUBLIC_STATIC_MODE && active === "syncs" && <SyncsView />}
               {active === "data" && <DataHealth payload={payload} drilldown={drilldown?.view === "data" ? drilldown : null} onClearDrilldown={() => setDrilldown(null)} />}
             </>
           )}
@@ -418,6 +448,7 @@ function componentDrilldown(name: unknown): Drilldown {
   if (normalized.includes("roadmap")) return { view: "roadmaps", focus: "health", label: "Showing: Roadmap health details" };
   if (normalized.includes("report")) return { view: "reporting", focus: "readiness", label: "Showing: Reporting details" };
   if (normalized.includes("performance")) return { view: "performance", focus: "summary", label: "Showing: Performance details" };
+  if (normalized.includes("finance")) return { view: "finance", focus: "summary", label: "Showing: Finance details" };
   if (normalized.includes("data")) return { view: "data", focus: "health", label: "Showing: Data health details" };
   return { view: "clients", focus: "all", label: "Showing: Client health details" };
 }
@@ -430,6 +461,7 @@ function actionRowDrilldown(row: Row): Drilldown {
   if (area.includes("workflow")) return { view: "roadmaps", focus: "workflow_gaps", clientSlug, label: clientSlug ? `Showing: Workflow readiness for ${clientSlug}` : "Showing: Workflow readiness gaps" };
   if (area.includes("crawl")) return { view: "data", focus: "crawl_latest", clientSlug, label: clientSlug ? `Showing: Crawl data for ${clientSlug}` : "Showing: Technical crawl data" };
   if (area.includes("comms")) return { view: "comms", focus: "attention", clientSlug, label: clientSlug ? `Showing: Comms for ${clientSlug}` : "Showing: Comms attention" };
+  if (area.includes("finance")) return { view: "finance", focus: "not_issued", clientSlug, label: clientSlug ? `Showing: Finance for ${clientSlug}` : "Showing: Finance follow-up" };
   return { view: "clients", focus: "health", clientSlug, label: clientSlug ? `Showing: Client health for ${clientSlug}` : "Showing: Client health details" };
 }
 
@@ -440,6 +472,8 @@ function Overview({ payload, healthDistribution, componentRows, onDrilldown }: {
   const agentRuns = details?.recent_agent_runs ?? 0;
   const roadmapCoverage = details?.roadmap_coverage;
   const roadmapScores = payload.overview.component_details?.roadmaps ?? {};
+  const financeScores = payload.overview.component_details?.finance ?? {};
+  const financeHealth = payload.finance_health ?? {};
   const blockedWorkflows = payload.workflow_readiness?.filter((row) => ["blocked", "needs_attention", "partial"].includes(String(row.readiness_status ?? "").toLowerCase())).length ?? 0;
   const crawlRows = payload.crawl_latest?.length ?? 0;
   return (
@@ -453,7 +487,7 @@ function Overview({ payload, healthDistribution, componentRows, onDrilldown }: {
                 <span className="text-6xl font-semibold tracking-normal">{payload.overview.score}</span>
                 <span className="pb-2 text-lg text-slate-500">/100</span>
               </div>
-              <div className="mt-3"><Badge tone={payload.overview.tone}>{payload.overview.status}</Badge></div>
+              <div className="mt-3"><Badge tone={payload.overview.tone}>{text(payload.overview.status)}</Badge></div>
             </div>
             <div className="h-56 min-w-0 flex-1">
               <ResponsiveContainer width="100%" height="100%">
@@ -476,8 +510,8 @@ function Overview({ payload, healthDistribution, componentRows, onDrilldown }: {
           <div className="mt-3 h-56">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={healthDistribution} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88} paddingAngle={3} cursor="pointer" onClick={(entry: { name?: unknown }) => onDrilldown({ view: "clients", focus: "health_status", filters: { health_status: String(entry.name ?? "") }, label: `Showing: ${String(entry.name ?? "Client")} clients` })}>
-                  {healthDistribution.map((entry) => <Cell key={entry.name} fill={colorForStatus(entry.name)} />)}
+                <Pie data={healthDistribution} dataKey="value" nameKey="name" innerRadius={55} outerRadius={88} paddingAngle={3} cursor="pointer" onClick={(entry: { name?: unknown; raw_name?: unknown }) => onDrilldown({ view: "clients", focus: "health_status", filters: { health_status: String(entry.raw_name ?? entry.name ?? "") }, label: `Showing: ${text(entry.name ?? "Client")} clients` })}>
+                  {(healthDistribution as CountRow[]).map((entry) => <Cell key={entry.raw_name} fill={colorForStatus(entry.raw_name)} />)}
                 </Pie>
                 <Tooltip />
               </PieChart>
@@ -493,6 +527,8 @@ function Overview({ payload, healthDistribution, componentRows, onDrilldown }: {
         <MetricCard label="Roadmap Gaps" value={details?.roadmap_gap_clients?.length ?? 0} tone={(details?.roadmap_gap_clients?.length ?? 0) ? "warning" : "success"} source="missing evidence or validation" onClick={() => onDrilldown({ view: "roadmaps", focus: "missing_roadmaps", label: "Showing: Missing or unverified roadmaps" })} />
         <MetricCard label="Report Gaps" value={details?.report_gap_clients?.length ?? 0} tone={(details?.report_gap_clients?.length ?? 0) ? "warning" : "success"} source="agency_memory.monthly_report_snapshots" onClick={() => onDrilldown({ view: "reporting", focus: "missing_reports", label: "Showing: Missing report links" })} />
         <MetricCard label="Open Delivery" value={payload.delivery.length} tone={payload.delivery.length > 10 ? "warning" : "neutral"} source="agency_reporting.client_task_status" onClick={() => onDrilldown({ view: "delivery", focus: "open_tasks", label: "Showing: Open delivery tasks" })} />
+        <MetricCard label="Finance Score" value={percentScore(payload.overview.components.finance)} tone={statusTone(financeHealth.status)} source="retainers + expenses" onClick={() => onDrilldown({ view: "finance", focus: "summary", label: "Showing: Finance health" })} />
+        <MetricCard label="Due Not Issued" value={formatCurrency(financeHealth.not_issued_due_amount_aud)} tone={numberValue(financeHealth.not_issued_due_amount_aud) ? "danger" : "success"} source="data/finance/client_retainers_2026.json" onClick={() => onDrilldown({ view: "finance", focus: "not_issued", label: "Showing: Due retainers not issued" })} />
         <MetricCard label="Comms Queue" value={payload.comms.length} tone={payload.comms.length ? "warning" : "success"} source="agency_reporting.client_comms_attention" onClick={() => onDrilldown({ view: "comms", focus: "attention", label: "Showing: Comms attention queue" })} />
         <MetricCard label="Recent Agent Runs" value={agentRuns} tone="neutral" source="agent run logs" onClick={() => onDrilldown({ view: "agents", focus: "recent_runs", label: "Showing: Recent agent runs" })} />
         <MetricCard label="Agent Work Done" value={payload.agent_work_completed?.length ?? 0} tone="success" source="completed agent runs" onClick={() => onDrilldown({ view: "agents", focus: "completed", label: "Showing: Completed agent work" })} />
@@ -513,6 +549,17 @@ function Overview({ payload, healthDistribution, componentRows, onDrilldown }: {
             <MiniStat label="Evidence" value={percentScore(roadmapScores.evidence)} detail={`${roadmapCoverage?.clients_with_validated_content ?? 0}/${roadmapCoverage?.clients_total ?? 0} clients validated`} tone={statusTone((roadmapScores.evidence ?? 0) >= 85 ? "healthy" : "needs_attention")} onClick={() => onDrilldown({ view: "roadmaps", focus: "drive_evidence", label: "Showing: Drive evidence metadata" })} />
             <MiniStat label="Completion" value={percentScore(roadmapScores.completion)} detail={`${roadmapCoverage?.monthly_rollups ?? 0} monthly rollups`} tone={statusTone((roadmapScores.completion ?? 0) >= 70 ? "healthy" : "needs_attention")} onClick={() => onDrilldown({ view: "roadmaps", focus: "monthly_rollup", label: "Showing: Monthly roadmap rollup" })} />
             <MiniStat label="Risk" value={percentScore(roadmapScores.risk)} detail={`${roadmapCoverage?.missing_evidence_items ?? 0} missing evidence, ${roadmapCoverage?.overdue_items ?? 0} overdue`} tone={statusTone((roadmapScores.risk ?? 0) >= 85 ? "healthy" : "watch")} onClick={() => onDrilldown({ view: "roadmaps", focus: "missing_roadmaps", label: "Showing: Roadmap risk details" })} />
+          </div>
+        </Panel>
+        <Panel>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-semibold">Finance Health Explained</h2>
+            <span className="text-sm text-slate-500">{text(financeHealth.current_period)}</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MiniStat label="Collection" value={percentScore(financeScores.collection)} detail={`${formatCurrency(financeHealth.paid_due_amount_aud)} paid of ${formatCurrency(financeHealth.due_amount_aud)} due`} tone={statusTone((financeScores.collection ?? 0) >= 85 ? "healthy" : "needs_attention")} onClick={() => onDrilldown({ view: "finance", focus: "client_scores", label: "Showing: Client finance scores" })} />
+            <MiniStat label="Invoicing" value={percentScore(financeScores.invoicing)} detail={`${formatCurrency(financeHealth.issued_due_amount_aud)} issued or paid`} tone={statusTone((financeScores.invoicing ?? 0) >= 85 ? "healthy" : "watch")} onClick={() => onDrilldown({ view: "finance", focus: "not_issued", label: "Showing: Due retainers not issued" })} />
+            <MiniStat label="Margin" value={percentScore(financeScores.margin)} detail={`${formatCurrency(financeHealth.expense_total_aud)} expenses recorded`} tone={statusTone((financeScores.margin ?? 0) >= 85 ? "healthy" : "watch")} onClick={() => onDrilldown({ view: "finance", focus: "monthly", label: "Showing: Monthly finance view" })} />
           </div>
         </Panel>
         <Panel>
@@ -547,7 +594,7 @@ function MiniStat({ label, value, detail, tone, onClick }: { label: string; valu
     <>
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-slate-600">{label}</p>
-        <Badge tone={tone}>{tone === "success" ? "ok" : "watch"}</Badge>
+        <Badge tone={tone}>{tone === "success" ? "OK" : "Watch"}</Badge>
       </div>
       <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
       <p className="mt-1 text-xs text-slate-500">{detail}</p>
@@ -593,12 +640,12 @@ function ClientsView({ payload, selectedClient, onSelectClient, drilldown, onCle
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <p className="truncate text-sm font-medium text-slate-950" title={text(client.client_name)}>{text(client.client_name)}</p>
-                      <Badge tone={statusTone(client.health_status)}>{text(client.health_status).replace("critical_missing", "critical").replace("needs_attention", "watch")}</Badge>
+                      <Badge tone={statusTone(client.health_status)}>{text(client.health_status)}</Badge>
                     </div>
                     <p className="truncate text-xs text-slate-500" title={slug}>{slug}</p>
                     <div className="mt-1 grid grid-cols-3 gap-1 text-[11px] leading-4 text-slate-600">
                       <span className="truncate">Score {formatPercent(client.health_score)}</span>
-                      <span className="truncate">Missing {text(client.missing_required_assets)}</span>
+                      <span className="truncate">Guide {client.has_brand_writing_guide_doc ? "Doc" : client.has_writing_style ? "Local" : "No"}</span>
                       <span className="truncate">Report {text(client.latest_report_month)}</span>
                     </div>
                   </div>
@@ -640,7 +687,9 @@ function ClientDetailPanel({ detail }: { detail?: ClientDetail }) {
         </dl>
       </div>
       <ClientContextBlock context={context} />
+      <ClientSetupChecklist detail={detail} />
       <DetailSection title="Missing Required Health Assets" rows={detail.missing_assets} columns={["asset_type", "asset_label", "presence_status", "criticality", "verification_level", "notes"]} empty="No missing expected health assets." />
+      <DetailSection title="Brand Writing Guide Assets" rows={detail.health_assets.filter((row) => ["writing_style", "brand_writing_guide_doc"].includes(String(row.asset_type ?? "")))} columns={["asset_type", "asset_label", "presence_status", "source_ref", "source_path", "freshness_date", "notes"]} empty="No brand writing guide assets found." />
       <DetailSection title="Recent Timeline" rows={detail.timeline.slice(0, 12)} columns={["event_date", "event_type", "title", "status", "summary", "agent_name", "source_table"]} empty="No timeline events found." />
       <DetailSection title="Agent Work Completed" rows={detail.agent_work.slice(0, 8)} columns={["agent_name", "task_name", "completed_at", "status", "findings_count", "actions_count", "workflow_id"]} empty="No completed agent work found for this client." />
       <DetailSection title="Reports" rows={detail.reports.slice(0, 6)} columns={["report_month", "share_id", "report_path", "generated_at", "template"]} empty="No reports found." />
@@ -648,10 +697,110 @@ function ClientDetailPanel({ detail }: { detail?: ClientDetail }) {
       <DetailSection title="Roadmaps" rows={detail.roadmaps.slice(0, 8)} columns={["planned_month", "item_title", "priority", "delivery_status", "owner_hint", "due_date"]} empty={detail.roadmap_missing ? "No roadmap rows found for this client." : "No current roadmap rows."} />
       <DetailSection title="Drive Evidence" rows={detail.drive_evidence} columns={["folder_role", "verified_at", "file_count", "populated_file_count", "content_validated_file_count", "content_validation_status", "latest_modified_date"]} empty="No Drive verification metadata found." />
       <DetailSection title="Performance Trend" rows={detail.performance_history.slice(-6)} columns={["period_id", "organic_sessions", "gsc_clicks", "organic_revenue", "se_visibility_end"]} empty="No performance history." />
+      <DetailSection title="Retainers And Expenses" rows={detail.finance ?? []} columns={["period_id", "billing_status", "retainer_amount_aud", "expense_amount_aud", "net_amount_aud", "source"]} empty="No finance rows found for this client." />
       <DetailSection title="SEO Opportunities And Readiness" rows={[...detail.seo_opportunities.slice(0, 4), ...detail.workflow_readiness.slice(0, 4)]} columns={["priority", "readiness_status", "workflow_id", "recommended_workflow_id", "recommended_agent_id", "summary", "recommended_action", "missing_inputs_json"]} empty="No SEO opportunity or workflow readiness rows." />
       <DetailSection title="Crawl And API Smoke" rows={[...detail.crawl_latest.slice(0, 2), ...detail.api_smoke_checks.slice(0, 6)]} columns={["crawl_date", "source", "status", "crawl_status", "pages_crawled", "rows_returned", "checked_at", "error_class"]} empty="No crawl or API smoke rows." />
       <DetailSection title="Delivery And Comms" rows={[...detail.delivery.slice(0, 4), ...detail.comms.slice(0, 4)]} columns={["item_name", "summary", "status", "severity", "owner", "due_date"]} empty="No delivery or comms items." />
     </Panel>
+  );
+}
+
+type ChecklistStatus = "complete" | "partial" | "missing";
+
+function boolValue(value: unknown) {
+  return value === true || value === "true" || value === 1 || value === "1";
+}
+
+function checklistIcon(status: ChecklistStatus) {
+  if (status === "complete") return "✅";
+  if (status === "partial") return "⚠️";
+  return "❌";
+}
+
+function checklistTone(status: ChecklistStatus) {
+  if (status === "complete") return "success";
+  if (status === "partial") return "warning";
+  return "danger";
+}
+
+function assetStatus(detail: ClientDetail, assetTypes: string[]) {
+  const rows = detail.health_assets.filter((row) => assetTypes.includes(String(row.asset_type ?? "")));
+  if (!rows.length) return undefined;
+  if (rows.some((row) => String(row.presence_status ?? "").toLowerCase() === "present")) return "present";
+  if (rows.some((row) => row.expected)) return "missing";
+  return String(rows[0].presence_status ?? "missing").toLowerCase();
+}
+
+function ClientSetupChecklist({ detail }: { detail: ClientDetail }) {
+  const health = detail.health;
+  const driveReady = boolValue(health.has_drive_root_verified);
+  const ga4Ready = boolValue(health.has_ga4_access);
+  const roadmapRoute = boolValue(health.has_roadmap_route);
+  const roadmapFolderReady = boolValue(health.has_roadmap_folder_verified) || boolValue(health.has_roadmap_files);
+  const roadmapComplete = boolValue(health.has_roadmap_content_validated);
+  const writingGuideReady = boolValue(health.has_brand_writing_guide_doc) || boolValue(health.has_writing_style) || assetStatus(detail, ["writing_style", "brand_writing_guide_doc"]) === "present";
+
+  const rows: Array<{ item: string; status: ChecklistStatus; statusLabel: string; note: string }> = [
+    {
+      item: "Drive Setup",
+      status: driveReady ? "complete" : "missing",
+      statusLabel: driveReady ? "Tick" : "Missing",
+      note: driveReady ? "Client Drive folder has been verified." : "Needs verified client Drive folder metadata."
+    },
+    {
+      item: "GA4",
+      status: ga4Ready ? "complete" : "missing",
+      statusLabel: ga4Ready ? "Tick" : "Missing",
+      note: ga4Ready ? "GA4 access has passed the API smoke check." : "Needs verified GA4 access, not just a configured property."
+    },
+    {
+      item: "Roadmap Folder",
+      status: roadmapFolderReady ? "complete" : roadmapRoute ? "partial" : "missing",
+      statusLabel: roadmapFolderReady ? "Tick" : roadmapRoute ? "Route only" : "Missing",
+      note: roadmapFolderReady ? "Roadmap folder or file metadata is verified." : roadmapRoute ? "Roadmap route exists but the folder or files still need verification." : "Needs a configured and verified roadmap folder."
+    },
+    {
+      item: "Roadmap Verified Complete",
+      status: roadmapComplete ? "complete" : "missing",
+      statusLabel: roadmapComplete ? "Tick" : "Missing",
+      note: roadmapComplete ? "Roadmap content validation metadata is complete." : "Needs bounded roadmap content validation metadata."
+    },
+    {
+      item: "Writing Guidelines",
+      status: writingGuideReady ? "complete" : "missing",
+      statusLabel: writingGuideReady ? "Tick" : "Missing",
+      note: writingGuideReady ? "Brand writing guide or local writing style is available." : "Needs a writing guide doc or local writing style notes."
+    }
+  ];
+
+  return (
+    <div className="rounded-md border border-slate-200">
+      <div className="border-b border-slate-200 px-3 py-2">
+        <h3 className="text-sm font-semibold text-slate-950">Client Setup Checklist</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-3 py-2 font-medium">Requirement</th>
+              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">Plain English Check</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((row) => (
+              <tr key={row.item}>
+                <td className="px-3 py-2 font-medium text-slate-900">{row.item}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <Badge tone={checklistTone(row.status)}>{checklistIcon(row.status)} {row.statusLabel}</Badge>
+                </td>
+                <td className="px-3 py-2 text-slate-600">{row.note}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -861,7 +1010,7 @@ function deliveryFocusLabel(focus?: string, statusLabel?: string) {
   if (focus === "overdue") return "Overdue";
   if (focus === "missing_owner") return "Missing owner";
   if (focus === "missing_due_date") return "Missing due date";
-  return taskStatusLabels[focus] ?? focus.replaceAll("_", " ");
+  return taskStatusLabels[focus] ?? humanizeLabel(focus);
 }
 
 function chartEventRow(entry: Row) {
@@ -1141,6 +1290,116 @@ function PerformanceView({ payload }: { payload: DashboardPayload }) {
   );
 }
 
+function FinanceView({ payload, drilldown, onClearDrilldown }: { payload: DashboardPayload; drilldown?: Drilldown | null; onClearDrilldown: () => void }) {
+  const [financeClient, setFinanceClient] = useState("");
+  useEffect(() => {
+    if (drilldown?.clientSlug) setFinanceClient(drilldown.clientSlug);
+  }, [drilldown?.clientSlug]);
+  const rows = payload.finance ?? [];
+  const monthlyRows = payload.finance_monthly ?? [];
+  const clientRows = payload.finance_clients ?? [];
+  const health = payload.finance_health ?? {};
+  const selectedClient = payload.clients.find((client) => client.client_slug === financeClient);
+  const visibleRows = rows.filter((row) => {
+    if (financeClient && row.client_slug !== financeClient) return false;
+    if (drilldown?.focus === "not_issued" && (row.billing_status !== "not_issued" || !row.is_due)) return false;
+    return true;
+  });
+  const visibleClientRows = clientRows.filter((row) => {
+    if (financeClient && row.client_slug !== financeClient) return false;
+    if (drilldown?.focus === "not_issued" && !numberValue(row.not_issued_due_amount_aud)) return false;
+    return true;
+  });
+  const chartRows = monthlyRows.map((row) => ({
+    ...row,
+    paid_amount_aud: numberValue(row.paid_amount_aud),
+    issued_amount_aud: numberValue(row.issued_amount_aud),
+    not_issued_amount_aud: numberValue(row.not_issued_amount_aud),
+    planned_amount_aud: numberValue(row.planned_amount_aud),
+    expense_amount_aud: numberValue(row.expense_amount_aud)
+  }));
+  return (
+    <div className="space-y-4">
+      <FocusBanner drilldown={drilldown} onClear={onClearDrilldown} />
+      <section className="grid gap-4 md:grid-cols-4">
+        <MetricCard label="Finance score" value={percentScore(health.score)} tone={statusTone(health.status)} source="collection + invoicing + margin" />
+        <MetricCard label="Due retainers" value={formatCurrency(health.due_amount_aud)} tone="neutral" source="months due to current period" />
+        <MetricCard label="Paid due" value={formatCurrency(health.paid_due_amount_aud)} tone="success" source="paid retainer amount" />
+        <MetricCard label="Due not issued" value={formatCurrency(health.not_issued_due_amount_aud)} tone={numberValue(health.not_issued_due_amount_aud) ? "danger" : "success"} source="not issued due amount" />
+        <MetricCard label="Total retainers" value={formatCurrency(health.retainer_total_aud)} tone="neutral" source="13-month projection" />
+        <MetricCard label="Expenses recorded" value={formatCurrency(health.expense_total_aud)} tone={numberValue(health.expense_total_aud) ? "warning" : "neutral"} source="Monday Expenses board" />
+        <MetricCard label="Gross margin" value={formatCurrency(health.gross_margin_amount_aud ?? health.net_total_aud)} tone="success" source="retainers minus expenses" />
+        <MetricCard label="Margin rate" value={formatPercent(health.gross_margin_rate)} tone="success" source="gross margin / retainers" />
+        <MetricCard label="Current period" value={text(health.current_period)} tone="neutral" source="Australia/Melbourne" />
+      </section>
+
+      <Panel>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Retainers Month By Month</h2>
+            <p className="text-sm text-slate-500">Paid, issued, not issued, planned retainers, and active Monday expenses.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedClient && <FaviconMark row={selectedClient} />}
+            <select className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm" value={financeClient} onChange={(event) => setFinanceClient(event.target.value)}>
+              <option value="">All clients</option>
+              {clientRows.map((client) => <option key={String(client.client_slug)} value={String(client.client_slug)}>{text(client.client_label ?? client.client_name ?? client.client_slug)}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="mt-4 h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={financeClient ? monthFinanceRows(visibleRows) : chartRows} margin={{ top: 36, right: 18, left: 0, bottom: 36 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="period_id" tick={{ fontSize: 12 }} />
+              <YAxis tickFormatter={(value) => `$${Number(value) / 1000}k`} />
+              <Tooltip formatter={(value) => formatCurrency(value)} />
+              <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="paid_amount_aud" name="Paid" stackId="retainers" fill="#059669" />
+              <Bar dataKey="issued_amount_aud" name="Issued" stackId="retainers" fill="#2563eb" />
+              <Bar dataKey="not_issued_amount_aud" name="Not issued" stackId="retainers" fill="#dc2626" />
+              <Bar dataKey="planned_amount_aud" name="Planned" stackId="retainers" fill="#94a3b8" />
+              <Bar dataKey="expense_amount_aud" name="Expenses" fill="#d97706" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Panel>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <TableView title={drilldown?.focus === "client_scores" ? "Focused: Client Finance Health" : "Client Finance Health"} rows={visibleClientRows} columns={["client_label", "client_slug", "finance_status", "finance_score", "retainer_total_aud", "expense_total_aud", "gross_margin_amount_aud", "gross_margin_rate", "due_amount_aud", "paid_due_amount_aud", "issued_due_amount_aud", "not_issued_due_amount_aud", "collection_rate", "invoice_coverage_rate", "expense_ratio"]} emptyLabel="No client finance rows found." clientRows={payload.clients} />
+        <TableView title={drilldown?.focus === "monthly" ? "Focused: Monthly Finance Summary" : "Monthly Finance Summary"} rows={monthlyRows} columns={["period_id", "retainer_amount_aud", "expense_amount_aud", "gross_margin_amount_aud", "gross_margin_rate", "paid_amount_aud", "issued_amount_aud", "not_issued_amount_aud", "planned_amount_aud", "collection_rate", "invoice_coverage_rate", "billable_clients"]} emptyLabel="No monthly finance rows found." />
+      </section>
+      <TableView title="Monday Expense Detail" rows={payload.finance_expenses ?? []} columns={["period_id", "expense_name", "cost_per_month_aud", "start_date", "renewal_date", "invoicing_schedule_date", "source"]} emptyLabel="No active Monday expense rows found." />
+      <TableView title={drilldown?.focus === "not_issued" ? "Focused: Due Retainers Not Issued" : "Retainer And Expense Detail"} rows={visibleRows} columns={["period_id", "client_label", "client_slug", "billing_status", "retainer_amount_aud", "expense_amount_aud", "net_amount_aud", "is_due", "source"]} emptyLabel="No finance rows match the current selection." clientRows={payload.clients} />
+    </div>
+  );
+}
+
+function monthFinanceRows(rows: Row[]) {
+  const byMonth = new Map<string, Row>();
+  rows.forEach((row) => {
+    const period = String(row.period_id ?? "");
+    if (!period) return;
+    const entry = byMonth.get(period) ?? {
+      period_id: period,
+      paid_amount_aud: 0,
+      issued_amount_aud: 0,
+      not_issued_amount_aud: 0,
+      planned_amount_aud: 0,
+      expense_amount_aud: 0
+    };
+    const status = String(row.billing_status ?? "");
+    const amount = numberValue(row.retainer_amount_aud);
+    if (status === "paid") entry.paid_amount_aud = numberValue(entry.paid_amount_aud) + amount;
+    if (status === "issued") entry.issued_amount_aud = numberValue(entry.issued_amount_aud) + amount;
+    if (status === "not_issued") entry.not_issued_amount_aud = numberValue(entry.not_issued_amount_aud) + amount;
+    if (status === "planned") entry.planned_amount_aud = numberValue(entry.planned_amount_aud) + amount;
+    entry.expense_amount_aud = numberValue(entry.expense_amount_aud) + numberValue(row.expense_amount_aud);
+    byMonth.set(period, entry);
+  });
+  return Array.from(byMonth.values()).sort((a, b) => String(a.period_id).localeCompare(String(b.period_id)));
+}
+
 function RoadmapsView({ payload, drilldown, onClearDrilldown }: { payload: DashboardPayload; drilldown?: Drilldown | null; onClearDrilldown: () => void }) {
   const roadmapCoverage = payload.overview_details?.roadmap_coverage;
   const roadmapScores = payload.overview.component_details?.roadmaps ?? {};
@@ -1285,7 +1544,7 @@ function ReportingView({ payload, drilldown, onClearDrilldown }: { payload: Dash
                       </div>
                     </td>
                     <td className="px-3 py-2">
-                      <Badge tone={row.has_report ? "success" : "warning"}>{row.has_report ? "linked" : "missing"}</Badge>
+                      <Badge tone={row.has_report ? "success" : "warning"}>{row.has_report ? "Linked" : "Missing"}</Badge>
                     </td>
                     <td className="px-3 py-2">
                       {row.report_url ? (
@@ -1327,53 +1586,723 @@ function ReportingView({ payload, drilldown, onClearDrilldown }: { payload: Dash
   );
 }
 
-function AgentsView({ summaries, completedWork, rawRuns, clientRows, drilldown, onClearDrilldown }: { summaries: AgentActivitySummary[]; completedWork: Row[]; rawRuns: Row[]; clientRows: Row[]; drilldown?: Drilldown | null; onClearDrilldown: () => void }) {
-  const completedByAgent = countBy(completedWork, "agent_name");
+function numericValue(value: unknown) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function timestampMs(value: unknown) {
+  if (value === null || value === undefined || value === "") return 0;
+  const date = new Date(String(value).replace(" ", "T"));
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function rowStatus(row: Row) {
+  return String(row.status ?? "").toLowerCase();
+}
+
+function agentRunTime(row: Row) {
+  return timestampMs(row.completed_at ?? row.started_at);
+}
+
+function agentActionLabel(row: Row) {
+  const actions = numericValue(row.actions_count);
+  const findings = numericValue(row.findings_count);
+  if (actions && findings) return `${formatNumber(actions)} action${actions === 1 ? "" : "s"} from ${formatNumber(findings)} finding${findings === 1 ? "" : "s"}`;
+  if (actions) return `${formatNumber(actions)} action${actions === 1 ? "" : "s"} suggested`;
+  if (findings) return `${formatNumber(findings)} finding${findings === 1 ? "" : "s"}`;
+  return "No findings or actions";
+}
+
+function agentOutcomeSentence(row: Row) {
+  const status = text(row.status);
+  const mode = text(row.mode);
+  const source = text(row.source);
+  return `${status} via ${mode}${source !== "—" ? ` · ${source}` : ""}`;
+}
+
+function listRows(value: unknown): Row[] {
+  return Array.isArray(value) ? value.filter((item): item is Row => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : [];
+}
+
+function AgentRunCard({ run, compact = false, showDetailState = false }: { run: Row; compact?: boolean; showDetailState?: boolean }) {
+  const status = rowStatus(run);
+  const isRunning = status === "running";
+  const isFailed = ["failed", "error"].includes(status);
+  const title = text(run.task_name ?? run.agent_name ?? run.agent_id);
+  const summary = text(run.task_summary ?? run.error_message ?? run.output_path);
+  const time = formatMelbourneDateTime(run.completed_at ?? run.started_at);
+  const findings = listRows(run.findings_preview);
+  const actions = listRows(run.actions_preview);
+  const findingsCount = numericValue(run.findings_count);
+  const actionsCount = numericValue(run.actions_count);
+  const hasDetailPreviews = findings.length > 0 || actions.length > 0;
+  const expectedDetails = findingsCount + actionsCount > 0;
   return (
-    <div className="space-y-4">
-      <FocusBanner drilldown={drilldown} onClear={onClearDrilldown} />
-      <section className="grid gap-4 md:grid-cols-4">
-        <MetricCard label="Completed work rows" value={formatNumber(completedWork.length)} tone="success" source="agent_run_log + local index + workflow summaries" />
-        <MetricCard label="Agents with work" value={formatNumber(completedByAgent.length)} tone="neutral" source="completed agent rows" />
-        <MetricCard label="Failed recent runs" value={formatNumber(summaries.reduce((total, agent) => total + Number(agent.failed || 0), 0))} tone={summaries.some((agent) => agent.failed) ? "warning" : "success"} source="agent activity summary" />
-        <MetricCard label="Raw local runs" value={formatNumber(rawRuns.length)} tone="neutral" source="data/agent_runs/index.json" />
-      </section>
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {summaries.map((agent) => (
-          <Panel key={agent.agent_id}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">{agent.agent_name}</h2>
-                <p className="text-xs text-slate-500">{agent.agent_id}</p>
-              </div>
-              <Badge tone={agent.failed ? "warning" : "success"}>{agent.failed ? `${agent.failed} failed` : "ok"}</Badge>
-            </div>
-            <p className="mt-3 text-sm text-slate-600">Last completed: {formatMelbourneDateTime(agent.last_completed_at)}</p>
-            <div className="mt-3 space-y-2">
-              {agent.recent_runs.map((run) => (
-                <div key={String(run.run_id)} className="rounded-md border border-slate-200 bg-slate-50 p-2 text-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-slate-950">{text(run.task_name)}</p>
-                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-600">{text(run.task_summary)}</p>
-                    </div>
-                    <Badge tone={statusTone(run.status)}>{text(run.status)}</Badge>
+    <article className={cn(
+      "group rounded-2xl border bg-white p-4 shadow-[0_18px_42px_-28px_rgba(15,23,42,0.28)] transition duration-300 hover:-translate-y-0.5",
+      isRunning ? "border-sky-200 bg-sky-50/60" : isFailed ? "border-rose-200 bg-rose-50/60" : "border-slate-200"
+    )}>
+      <div className="flex items-start gap-3">
+        <div className={cn(
+          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ring-1",
+          isRunning ? "bg-sky-100 text-sky-800 ring-sky-200" : isFailed ? "bg-rose-100 text-rose-800 ring-rose-200" : "bg-emerald-50 text-emerald-800 ring-emerald-200"
+        )}>
+          {isRunning ? <CircleDot className="h-4 w-4 animate-pulse" /> : isFailed ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="truncate text-sm font-semibold text-slate-950">{title}</h3>
+            <Badge tone={statusTone(run.status)}>{text(run.status)}</Badge>
+          </div>
+          <p className={cn("mt-1 text-sm leading-6 text-slate-600", compact ? "line-clamp-2" : "line-clamp-3")}>{summary}</p>
+          {(hasDetailPreviews || showDetailState) && (
+            <div className="mt-3 grid gap-2">
+              {findings.map((finding, index) => (
+                <div key={`finding-${index}`} className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone={statusTone(finding.severity)}>{text(finding.severity ?? "finding")}</Badge>
+                    <span className="text-xs font-semibold text-amber-950">{text(finding.type)}</span>
+                    {finding.client_slug ? <span className="text-xs text-amber-700">{text(finding.client_slug)}</span> : null}
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <span>{formatMelbourneDateTime(run.completed_at ?? run.started_at)}</span>
-                    <span>{text(run.mode)}</span>
-                    <span>{formatNumber(run.findings_count)} findings</span>
-                    <span>{formatNumber(run.actions_count)} actions</span>
-                  </div>
+                  <p className="mt-2 text-xs leading-5 text-amber-950">{text(finding.summary)}</p>
+                  {finding.recommended_action ? <p className="mt-1 text-xs leading-5 text-amber-800">Recommended: {text(finding.recommended_action)}</p> : null}
                 </div>
               ))}
+              {actions.map((action, index) => (
+                <div key={`action-${index}`} className="rounded-xl border border-sky-200 bg-sky-50/80 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone={statusTone(action.priority)}>{text(action.priority ?? "action")}</Badge>
+                    <span className="text-xs font-semibold text-sky-950">{text(action.type)}</span>
+                    <span className="text-xs text-sky-700">{text(action.target_system)}</span>
+                    {action.requires_approval ? <span className="text-xs font-medium text-sky-900">Needs approval</span> : null}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-sky-950">{text(action.recommended_action)}</p>
+                </div>
+              ))}
+              {!hasDetailPreviews && showDetailState && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                  {expectedDetails
+                    ? "Details are not attached to this run yet. Open the output file or raw audit row for the full finding/action text."
+                    : "No findings or actions were recorded for this completed run."}
+                </div>
+              )}
             </div>
-          </Panel>
-        ))}
+          )}
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            <span>{time}</span>
+            <span>{text(run.agent_id ?? run.agent_name)}</span>
+            <span>{agentActionLabel(run)}</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function BriefsView({ briefs }: { briefs: Row[] }) {
+  const [selectedBriefId, setSelectedBriefId] = useState("");
+  const selectedBrief = briefs.find((brief) => brief.brief_id === selectedBriefId) ?? briefs[0];
+  const sections = Array.isArray(selectedBrief?.sections) ? selectedBrief.sections as Row[] : [];
+  const dailyBriefs = briefs.filter((brief) => brief.kind === "daily_agency_brief");
+  const systemBriefs = briefs.filter((brief) => brief.kind === "system_admin_sweep");
+
+  useEffect(() => {
+    if (!selectedBriefId && briefs[0]?.brief_id) setSelectedBriefId(String(briefs[0].brief_id));
+  }, [briefs, selectedBriefId]);
+
+  if (!briefs.length) {
+    return (
+      <Panel>
+        <h2 className="text-lg font-semibold">No briefs found</h2>
+        <p className="mt-2 text-sm text-slate-600">Brief files will appear here after the daily or system-admin automations write Markdown into the reports folder.</p>
+      </Panel>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard label="Briefs Found" value={briefs.length} tone="neutral" source="reports/**/*.md" />
+        <MetricCard label="Daily Briefs" value={dailyBriefs.length} tone={dailyBriefs.length ? "success" : "warning"} source="reports/daily" />
+        <MetricCard label="System Sweeps" value={systemBriefs.length} tone={systemBriefs.length ? "success" : "neutral"} source="reports/system_admin" />
       </section>
-      <TableView title={drilldown?.focus === "completed" ? "Focused: Agent Work Completed" : "Agent Work Completed"} rows={completedWork} columns={["agent_name", "task_name", "client_slug", "completed_at", "status", "findings_count", "actions_count", "workflow_id", "output_path", "task_summary", "source"]} emptyLabel="No completed agent work rows found." clientRows={clientRows} />
-      <TableView title="Completed Work By Agent" rows={completedByAgent} columns={["name", "value"]} emptyLabel="No completed agent counts found." />
-      <TableView title="Local Agent Runs" rows={rawRuns} columns={["run_id", "agent_id", "status", "mode", "started_at", "completed_at", "findings_count", "actions_count", "output_path"]} emptyLabel="No local agent run index rows found." />
+
+      <section className="grid gap-4 xl:grid-cols-[340px_1fr]">
+        <Panel>
+          <div className="mb-3">
+            <h2 className="text-lg font-semibold">Brief Library</h2>
+            <p className="text-sm text-slate-500">Latest automation outputs, newest first.</p>
+          </div>
+          <div className="space-y-2">
+            {briefs.map((brief) => {
+              const isSelected = brief.brief_id === selectedBrief?.brief_id;
+              return (
+                <button key={String(brief.brief_id)} type="button" onClick={() => setSelectedBriefId(String(brief.brief_id))} className={`w-full rounded-md border p-3 text-left transition ${isSelected ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50"}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-slate-950">{text(brief.title)}</h3>
+                    <Badge tone={brief.kind === "daily_agency_brief" ? "success" : "neutral"}>{text(brief.kind)}</Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">{formatMelbourneDateTime(brief.generated_at)}</p>
+                  <p className="mt-2 line-clamp-3 text-sm text-slate-700">{text(brief.summary)}</p>
+                </button>
+              );
+            })}
+          </div>
+        </Panel>
+
+        <div className="space-y-4">
+          <Panel>
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">{text(selectedBrief?.title)}</h2>
+                <p className="mt-1 text-sm text-slate-500">{formatMelbourneDateTime(selectedBrief?.generated_at)} · {text(selectedBrief?.relative_path)}</p>
+              </div>
+              <Badge tone={selectedBrief?.kind === "daily_agency_brief" ? "success" : "neutral"}>{text(selectedBrief?.kind)}</Badge>
+            </div>
+            <p className="mt-4 text-sm text-slate-700">{text(selectedBrief?.summary)}</p>
+          </Panel>
+
+          {!!sections.length && (
+            <section className="grid gap-4 lg:grid-cols-2">
+              {sections.map((section) => (
+                <Panel key={String(section.heading)}>
+                  <h3 className="font-semibold text-slate-950">{text(section.heading)}</h3>
+                  <BriefMarkdown value={String(section.body ?? "")} />
+                </Panel>
+              ))}
+            </section>
+          )}
+
+          <Panel>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold">Full Brief</h3>
+              <span className="text-sm text-slate-500">{text(selectedBrief?.source)}</span>
+            </div>
+            <pre className="max-h-[720px] overflow-auto whitespace-pre-wrap rounded-md bg-slate-950 p-4 text-sm leading-6 text-slate-100">{String(selectedBrief?.markdown ?? "")}</pre>
+          </Panel>
+
+          <TableView title="All Brief Files" rows={briefs} columns={["generated_at", "kind", "title", "summary", "relative_path", "section_count"]} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function BriefMarkdown({ value }: { value: string }) {
+  const lines = value.split("\n").filter((line) => line.trim());
+  if (!lines.length) return <p className="mt-2 text-sm text-slate-500">No detail recorded.</p>;
+  return (
+    <div className="mt-3 space-y-2 text-sm text-slate-700">
+      {lines.slice(0, 18).map((line, index) => {
+        const clean = line.replace(/^- /, "").trim();
+        return line.trim().startsWith("- ") ? (
+          <div key={`${clean}-${index}`} className="flex gap-2">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+            <p>{clean}</p>
+          </div>
+        ) : (
+          <p key={`${clean}-${index}`}>{clean}</p>
+        );
+      })}
+      {lines.length > 18 && <p className="text-xs font-medium text-slate-500">Full section continues in the complete brief below.</p>}
+    </div>
+  );
+}
+
+function AgentsView({ summaries, completedWork, rawRuns, clientRows, drilldown, onClearDrilldown }: { summaries: AgentActivitySummary[]; completedWork: Row[]; rawRuns: Row[]; clientRows: Row[]; drilldown?: Drilldown | null; onClearDrilldown: () => void }) {
+  const completedByAgent = countBy(completedWork, "agent_name");
+  const activeRuns = rawRuns.filter((run) => String(run.status ?? "").toLowerCase() === "running");
+  const failedRuns = [...rawRuns, ...completedWork]
+    .filter((run) => ["failed", "error"].includes(rowStatus(run)))
+    .sort((a, b) => agentRunTime(b) - agentRunTime(a))
+    .slice(0, 6);
+  const recentCompleted = [...completedWork]
+    .filter((run) => !["running", "failed", "error"].includes(rowStatus(run)))
+    .sort((a, b) => agentRunTime(b) - agentRunTime(a))
+    .slice(0, 8);
+  const highSignalRuns = completedWork
+    .filter((run) => !["failed", "error"].includes(rowStatus(run)) && numericValue(run.findings_count) + numericValue(run.actions_count) > 0)
+    .sort((a, b) => {
+      const signalDiff = numericValue(b.actions_count) + numericValue(b.findings_count) - (numericValue(a.actions_count) + numericValue(a.findings_count));
+      return signalDiff || agentRunTime(b) - agentRunTime(a);
+    })
+    .slice(0, 5);
+  const failedCount = summaries.reduce((total, agent) => total + Number(agent.failed || 0), 0);
+  const primaryState = activeRuns.length
+    ? `${activeRuns.length} agent run${activeRuns.length === 1 ? "" : "s"} in progress`
+    : failedCount
+      ? `${failedCount} recent failure${failedCount === 1 ? "" : "s"} need review`
+      : "No active failures; recent agent work is complete";
+  return (
+    <div className="space-y-6">
+      <FocusBanner drilldown={drilldown} onClear={onClearDrilldown} />
+      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle_at_0%_0%,rgba(14,165,233,0.12),transparent_34%),linear-gradient(135deg,#f8fafc,#ffffff_52%,#eef6f1)] p-5 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.35)] md:p-7">
+        <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+              <Bot className="h-3.5 w-3.5" />
+              Agent Control Room
+            </div>
+            <h2 className="mt-5 max-w-3xl text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">{primaryState}</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              Tool-backed runs are now tracked from start to finish. Running jobs come from the local index, completed durable work comes from BigQuery and workflow summaries, and raw rows stay available for audit.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 self-end">
+            <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+              <p className="text-xs font-medium text-slate-500">Active now</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{formatNumber(activeRuns.length)}</p>
+            </div>
+            <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-slate-200">
+              <p className="text-xs font-medium text-slate-500">Need review</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{formatNumber(failedCount)}</p>
+            </div>
+            <div className="col-span-2 rounded-2xl bg-slate-950 p-4 text-white">
+              <p className="text-xs font-medium text-slate-300">Recent completed work</p>
+              <p className="mt-2 text-3xl font-semibold">{formatNumber(completedWork.length)}</p>
+              <p className="mt-1 text-xs text-slate-400">{formatNumber(completedByAgent.length)} agents with logged work</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-4">
+        <MetricCard label="Active / Running" value={formatNumber(activeRuns.length)} tone={activeRuns.length ? "warning" : "success"} source="Local agent index start records" />
+        <MetricCard label="Failures to review" value={formatNumber(failedCount)} tone={failedCount ? "danger" : "success"} source="Recent agent activity summary" />
+        <MetricCard label="Completed work" value={formatNumber(completedWork.length)} tone="success" source="BigQuery + local index + workflow summaries" />
+        <MetricCard label="Raw local runs" value={formatNumber(rawRuns.length)} tone="neutral" source="data/agent_runs/index.json" />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <Panel className="rounded-2xl">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><TimerReset className="h-5 w-5 text-sky-700" /> Happening Now</h2>
+              <p className="mt-1 text-sm text-slate-500">Start records and interrupted/running jobs.</p>
+            </div>
+            <Badge tone={activeRuns.length ? "warning" : "success"}>{activeRuns.length ? "Live" : "Clear"}</Badge>
+          </div>
+          <div className="space-y-3">
+            {activeRuns.length ? activeRuns.map((run) => <AgentRunCard key={String(run.run_id)} run={run} />) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+                No agent is currently running. New tool-backed jobs will appear here as soon as their runner starts.
+              </div>
+            )}
+          </div>
+        </Panel>
+
+        <Panel className="rounded-2xl">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><AlertTriangle className="h-5 w-5 text-amber-700" /> Needs Attention</h2>
+              <p className="mt-1 text-sm text-slate-500">Only failed or errored runs appear here.</p>
+            </div>
+            <Badge tone={failedRuns.length ? "danger" : "success"}>{failedRuns.length ? `${failedRuns.length} failed` : "Clear"}</Badge>
+          </div>
+          <div className="space-y-3">
+            {failedRuns.map((run) => <AgentRunCard key={`${String(run.run_id)}-${String(run.agent_id)}`} run={run} compact />)}
+            {!failedRuns.length && (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+                No failed agent runs in the current activity window.
+              </div>
+            )}
+          </div>
+        </Panel>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+        <Panel className="rounded-2xl">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><Activity className="h-5 w-5 text-amber-700" /> Review-Worthy Successful Work</h2>
+              <p className="mt-1 text-sm text-slate-500">Successful runs that produced findings or suggested actions.</p>
+            </div>
+            <Badge tone={highSignalRuns.length ? "warning" : "success"}>{highSignalRuns.length ? `${highSignalRuns.length} signal` : "Quiet"}</Badge>
+          </div>
+          <div className="space-y-3">
+            {highSignalRuns.map((run) => <AgentRunCard key={`${String(run.run_id)}-${String(run.agent_id)}-${String(run.source)}`} run={run} compact />)}
+            {!highSignalRuns.length && (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+                Recent successful runs did not produce findings or suggested actions.
+              </div>
+            )}
+          </div>
+        </Panel>
+
+        <Panel className="rounded-2xl">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><ClipboardList className="h-5 w-5 text-emerald-700" /> Latest Completed Work</h2>
+              <p className="mt-1 text-sm text-slate-500">The most recent tool-backed work events, in plain English.</p>
+            </div>
+            <span className="text-sm text-slate-500">{formatNumber(recentCompleted.length)} shown</span>
+          </div>
+          <div className="space-y-3">
+            {recentCompleted.map((run) => <AgentRunCard key={`${String(run.run_id)}-${String(run.agent_id)}-${String(run.source)}`} run={run} compact showDetailState />)}
+          </div>
+        </Panel>
+
+        <Panel className="rounded-2xl">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-slate-950">Agents At A Glance</h2>
+            <p className="mt-1 text-sm text-slate-500">Who has been active and whether anything failed.</p>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {summaries.map((agent) => (
+              <div key={agent.agent_id} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-950">{agent.agent_name}</p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">{agentOutcomeSentence(agent.recent_runs[0] ?? {})}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <Badge tone={agent.failed ? "danger" : "success"}>{agent.failed ? `${agent.failed} failed` : "OK"}</Badge>
+                  <p className="mt-1 text-xs text-slate-500">{formatMelbourneDateTime(agent.last_completed_at)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </section>
+
+      <details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-panel">
+        <summary className="cursor-pointer select-none text-sm font-semibold text-slate-800">Audit tables and raw evidence</summary>
+        <div className="mt-4 space-y-4">
+          <TableView title={drilldown?.focus === "completed" ? "Focused: Agent Work Completed" : "Agent Work Completed"} rows={completedWork} columns={["agent_name", "task_name", "client_slug", "completed_at", "status", "findings_count", "actions_count", "findings_preview", "actions_preview", "workflow_id", "output_path", "task_summary", "source"]} emptyLabel="No completed agent work rows found." clientRows={clientRows} />
+          <TableView title="Completed Work By Agent" rows={completedByAgent} columns={["name", "value"]} emptyLabel="No completed agent counts found." />
+          <TableView title="Local Agent Runs" rows={rawRuns} columns={["run_id", "agent_id", "status", "mode", "started_at", "completed_at", "findings_count", "actions_count", "output_path"]} emptyLabel="No local agent run index rows found." />
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function elapsedLabel(start: unknown, end: unknown) {
+  if (!start) return "—";
+  const startDate = new Date(String(start));
+  const endDate = end ? new Date(String(end)) : new Date();
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return "—";
+  const seconds = Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}m ${remainder}s`;
+}
+
+function commandRows(commands: SyncCommandState[]): Row[] {
+  return commands.map((command) => ({
+    queued_at: command.queued_at,
+    started_at: command.started_at,
+    completed_at: command.completed_at,
+    sync_id: command.sync_id,
+    label: command.label,
+    category: command.category,
+    mode: command.mode,
+    status: command.status,
+    duration: elapsedLabel(command.started_at, command.completed_at),
+    exit_code: command.exit_code,
+    expected_logs: command.expected_logs?.join(", "),
+    command_id: command.command_id
+  }));
+}
+
+function syncRows(syncs: SyncDefinition[]): Row[] {
+  return syncs.map((sync) => ({
+    sync_id: sync.sync_id,
+    label: sync.label,
+    category: sync.category,
+    risk_level: sync.risk_level,
+    source_system: sync.source_system,
+    destination_layer: sync.destination_layer,
+    cadence: sync.cadence,
+    last_status: sync.last_run?.status ?? "never_run",
+    last_success_at: sync.last_success_at,
+    last_failure_at: sync.last_failure_at,
+    freshness_status: sync.freshness_status,
+    expected_logs: sync.expected_logs.join(", ")
+  }));
+}
+
+const syncGroupOrder = ["Master", "Monday", "BigQuery", "SEO Memory", "Finance", "Performance APIs", "Crawls", "Agents"];
+
+const syncGroupCopy: Record<string, string> = {
+  Master: "Use this when you want the normal operating picture refreshed without thinking about individual scripts.",
+  Monday: "Gets the latest local snapshot of task and board state. It does not write back to Monday.",
+  BigQuery: "Pushes approved local source data into the warehouse and rebuilds dashboard-ready tables.",
+  "SEO Memory": "Keeps workflow routing, client readiness, and SEO Automation metadata current.",
+  Finance: "Refreshes retainer and expense memory from approved local finance sources.",
+  "Performance APIs": "Checks or imports GA4, Search Console, and SE Ranking summaries.",
+  Crawls: "Loads approved sanitized Screaming Frog crawl evidence when you have an export ready.",
+  Agents: "Runs AgencyOS agents and logs their findings/actions into the operating layer."
+};
+
+function groupSyncs(syncs: SyncDefinition[]) {
+  const groups = new Map<string, SyncDefinition[]>();
+  syncs.forEach((sync) => {
+    const group = sync.simple_group || sync.category || "Other";
+    groups.set(group, [...(groups.get(group) ?? []), sync]);
+  });
+  return Array.from(groups.entries()).sort(([a], [b]) => {
+    const aIndex = syncGroupOrder.indexOf(a);
+    const bIndex = syncGroupOrder.indexOf(b);
+    if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+}
+
+function SyncsView() {
+  const [syncPayload, setSyncPayload] = useState<SyncPayload | null>(null);
+  const [loadingSyncs, setLoadingSyncs] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [selectedCommandId, setSelectedCommandId] = useState<string | null>(null);
+  const [clientSlug, setClientSlug] = useState("");
+  const [inputPath, setInputPath] = useState("");
+  const [crawlId, setCrawlId] = useState("");
+  const [agentScript, setAgentScript] = useState("run_system_admin_agent.py");
+  const [queueingId, setQueueingId] = useState<string | null>(null);
+
+  async function loadSyncs() {
+    setSyncError(null);
+    try {
+      const response = await fetch(SYNC_API_URL);
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error ?? `Sync API returned ${response.status}`);
+      }
+      const nextPayload = await response.json();
+      setSyncPayload(nextPayload);
+      if (!selectedCommandId && nextPayload.commands?.[0]?.command_id) setSelectedCommandId(String(nextPayload.commands[0].command_id));
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : "Sync API unavailable");
+    } finally {
+      setLoadingSyncs(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadSyncs();
+    const timer = window.setInterval(() => void loadSyncs(), 5000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  async function queueSync(sync: SyncDefinition, mode: "dry_run" | "live") {
+    setQueueingId(sync.sync_id);
+    setSyncError(null);
+    try {
+      const options: Row = {};
+      if (sync.supports_client_scope && clientSlug.trim()) options.client_slug = clientSlug.trim();
+      if (sync.supports_ensure_tables && mode === "live") options.ensure_tables = true;
+      if (sync.sync_id === "crawl_memory_load") {
+        options.input_path = inputPath.trim();
+        options.crawl_id = crawlId.trim();
+        options.crawl_trigger = "monthly_baseline";
+        options.crawl_scope = "full_site";
+      }
+      if (sync.sync_id === "agent_work_update") options.agent_script = agentScript;
+      let confirmation = "";
+      if (mode === "live") {
+        confirmation = window.prompt(`Type ${sync.confirmation_text} to queue this live sync.`) ?? "";
+      }
+      const response = await fetch(`${SYNC_API_URL}/commands`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sync_id: sync.sync_id, mode, options, confirmation })
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error ?? `Could not queue sync (${response.status})`);
+      setSelectedCommandId(String(body.command_id));
+      await loadSyncs();
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : "Could not queue sync");
+    } finally {
+      setQueueingId(null);
+    }
+  }
+
+  if (loadingSyncs && !syncPayload) return <Panel>Loading sync operations…</Panel>;
+  if (!syncPayload) {
+    return (
+      <Panel>
+        <h2 className="text-lg font-semibold">Sync operations unavailable</h2>
+        <p className="mt-2 text-sm text-slate-600">{syncError ?? "No sync state available."}</p>
+        <Button className="mt-4" onClick={() => void loadSyncs()}>Retry</Button>
+      </Panel>
+    );
+  }
+
+  const syncGroups = groupSyncs(syncPayload.syncs);
+  const masterSync = syncPayload.syncs.find((sync) => sync.sync_id === "master_sync");
+  const timeline = syncPayload.timeline;
+  const selectedCommand = timeline.find((command) => command.command_id === selectedCommandId) ?? timeline[0];
+  const groupedStatuses = ["queued", "running", "succeeded", "failed"];
+  const visibleRows = commandRows(timeline);
+  const selectedRun = selectedCommand?.run;
+
+  return (
+    <div className="space-y-4">
+      {syncError && (
+        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">{syncError}</div>
+      )}
+      <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <MetricCard label="Running syncs" value={syncPayload.summary.running_syncs} tone={syncPayload.summary.running_syncs ? "warning" : "success"} source="local sync_ops queue" />
+        <MetricCard label="Failed syncs" value={syncPayload.summary.failed_syncs} tone={syncPayload.summary.failed_syncs ? "danger" : "success"} source="local sync_ops queue" />
+        <MetricCard label="Monday refreshed" value={formatMelbourneDateTime(syncPayload.summary.last_successful_monday_state_update)} tone={syncPayload.summary.last_successful_monday_state_update ? "success" : "warning"} source="monday_state_refresh" />
+        <MetricCard label="BigQuery pushed" value={formatMelbourneDateTime(syncPayload.summary.last_successful_bigquery_push)} tone={syncPayload.summary.last_successful_bigquery_push ? "success" : "warning"} source="BigQuery sync commands" />
+        <MetricCard label="Oldest stale" value={text(syncPayload.summary.oldest_stale_sync)} tone={syncPayload.summary.oldest_stale_sync ? "warning" : "success"} source="sync registry freshness" />
+        <MetricCard label="Cost failures" value={syncPayload.summary.recent_cost_guardrail_failures} tone={syncPayload.summary.recent_cost_guardrail_failures ? "danger" : "success"} source="agency_control.cost_checks" />
+      </section>
+
+      {masterSync && (
+        <Panel className="border-blue-200 bg-blue-50/40">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold text-slate-950">Master Sync</h2>
+                <Badge tone="warning">Live writes need confirmation</Badge>
+              </div>
+              <p className="mt-2 max-w-3xl text-sm text-slate-700">{masterSync.plain_english}</p>
+              <p className="mt-2 text-xs text-slate-600">Runs: {masterSync.master_step_ids.map((stepId) => humanizeValue(stepId)).join(" → ")}</p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button onClick={() => void queueSync(masterSync, "dry_run")} disabled={queueingId === masterSync.sync_id}><Play className="mr-2 h-4 w-4" />Dry run master</Button>
+              <Button onClick={() => void queueSync(masterSync, "live")} disabled={queueingId === masterSync.sync_id} className="border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100">Queue live master</Button>
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      <Panel>
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Syncs By Type</h2>
+            <p className="text-sm text-slate-500">Each button queues an allowlisted local command. Use dry run first when you are unsure.</p>
+          </div>
+          <details className="rounded-md border border-slate-200 bg-white p-3 lg:w-[720px]">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">Optional settings for scoped syncs</summary>
+            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+            <label className="text-xs font-medium text-slate-600">
+              Client scope
+              <input value={clientSlug} onChange={(event) => setClientSlug(event.target.value)} placeholder="client-slug" className="mt-1 h-9 w-full rounded-md border border-slate-200 px-2 text-sm" />
+            </label>
+            <label className="text-xs font-medium text-slate-600">
+              Crawl path
+              <input value={inputPath} onChange={(event) => setInputPath(event.target.value)} placeholder="crawl export path" className="mt-1 h-9 w-full rounded-md border border-slate-200 px-2 text-sm" />
+            </label>
+            <label className="text-xs font-medium text-slate-600">
+              Crawl ID
+              <input value={crawlId} onChange={(event) => setCrawlId(event.target.value)} placeholder="crawl-id" className="mt-1 h-9 w-full rounded-md border border-slate-200 px-2 text-sm" />
+            </label>
+            <label className="text-xs font-medium text-slate-600">
+              Agent
+              <select value={agentScript} onChange={(event) => setAgentScript(event.target.value)} className="mt-1 h-9 w-full rounded-md border border-slate-200 px-2 text-sm">
+                {["run_system_admin_agent.py", "run_daily_agency_brief.py", "run_promise_tracker.py", "run_reporting_prep_agent.py", "run_seo_opportunity_agent.py", "run_seo_workflow_router.py", "run_specialist_agent.py"].map((script) => <option key={script} value={script}>{script.replace(".py", "")}</option>)}
+              </select>
+            </label>
+            </div>
+          </details>
+        </div>
+        <div className="space-y-4">
+          {syncGroups.filter(([group]) => group !== "Master").map(([group, syncs]) => (
+            <section key={group} className="rounded-md border border-slate-200 p-3">
+              <div className="mb-3">
+                <h3 className="text-base font-semibold text-slate-950">{group}</h3>
+                <p className="text-sm text-slate-600">{syncGroupCopy[group] ?? "Approved local sync commands for this area."}</p>
+              </div>
+              <div className="grid gap-3 xl:grid-cols-2">
+                {syncs.map((sync) => (
+                  <div key={sync.sync_id} className="rounded-md border border-slate-100 bg-slate-50 p-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-semibold text-slate-950">{sync.label}</h4>
+                          <Badge tone={statusTone(sync.risk_level)}>{sync.risk_level}</Badge>
+                          <Badge tone={sync.last_run?.status === "failed" ? "danger" : sync.last_success_at ? "success" : "warning"}>{sync.last_run?.status ?? "never run"}</Badge>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-700">{sync.plain_english}</p>
+                        <p className="mt-1 text-xs text-slate-500">When: {sync.cadence}</p>
+                      </div>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        {sync.supports_dry_run && <Button onClick={() => void queueSync(sync, "dry_run")} disabled={queueingId === sync.sync_id}><Play className="mr-2 h-4 w-4" />Dry run</Button>}
+                        {sync.supports_live_run && <Button onClick={() => void queueSync(sync, "live")} disabled={queueingId === sync.sync_id} className="border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100">Queue live</Button>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+          </div>
+      </Panel>
+
+      <Panel>
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Run Timeline</h2>
+            <p className="text-sm text-slate-500">Polling every {syncPayload.meta.poll_seconds}s from local sync state.</p>
+          </div>
+          <Button onClick={() => void loadSyncs()}><RefreshCw className="mr-2 h-4 w-4" />Refresh syncs</Button>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-4">
+          {groupedStatuses.map((status) => {
+            const rows = timeline.filter((command) => command.status === status);
+            return (
+              <div key={status} className="min-h-[132px] rounded-md border border-slate-200 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">{humanizeValue(status)}</h3>
+                  <Badge tone={statusTone(status)}>{rows.length}</Badge>
+                </div>
+                <div className="space-y-2">
+                  {rows.slice(0, 5).map((command) => (
+                    <button key={command.command_id} type="button" onClick={() => setSelectedCommandId(command.command_id)} className="w-full rounded-md border border-slate-100 bg-slate-50 px-2 py-2 text-left text-xs hover:border-blue-200 hover:bg-blue-50">
+                      <span className="block font-medium text-slate-800">{command.label}</span>
+                      <span className="block text-slate-500">{formatMelbourneDateTime(command.started_at ?? command.queued_at)} · {command.mode}</span>
+                    </button>
+                  ))}
+                  {!rows.length && <p className="text-xs text-slate-500">No runs.</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
+
+      {selectedCommand && (
+        <Panel>
+          <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Run Detail</h2>
+              <p className="text-sm text-slate-500">{selectedCommand.label} · {selectedCommand.command_id}</p>
+            </div>
+            <Badge tone={statusTone(selectedCommand.status)}>{selectedCommand.status}</Badge>
+          </div>
+          <section className="grid gap-3 md:grid-cols-4">
+            <MetricCard label="Started" value={formatMelbourneDateTime(selectedCommand.started_at)} tone="neutral" source="local command state" />
+            <MetricCard label="Completed" value={formatMelbourneDateTime(selectedCommand.completed_at)} tone="neutral" source="local command state" />
+            <MetricCard label="Duration" value={elapsedLabel(selectedCommand.started_at, selectedCommand.completed_at)} tone="neutral" source="local command state" />
+            <MetricCard label="Exit code" value={selectedCommand.exit_code ?? "—"} tone={selectedCommand.status === "failed" ? "danger" : "success"} source="local process result" />
+          </section>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">Command</h3>
+              <pre className="max-h-52 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">{selectedCommand.command_display.join(" ")}</pre>
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">Output Summary</h3>
+              <pre className="max-h-52 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">{selectedRun?.stderr || selectedRun?.stdout || "No output captured yet."}</pre>
+            </div>
+          </div>
+          {!!selectedRun?.step_results?.length && (
+            <div className="mt-4">
+              <TableView title="Master Sync Steps" rows={selectedRun.step_results} columns={["label", "mode", "status", "exit_code"]} />
+            </div>
+          )}
+        </Panel>
+      )}
+
+      <TableView title="Sync Catalogue Rows" rows={syncRows(syncPayload.syncs)} columns={["label", "category", "risk_level", "last_status", "last_success_at", "last_failure_at", "freshness_status", "source_system", "destination_layer", "expected_logs"]} />
+      <TableView title="Recent Sync Commands" rows={visibleRows} columns={["queued_at", "started_at", "completed_at", "label", "category", "mode", "status", "duration", "exit_code", "expected_logs", "command_id"]} />
     </div>
   );
 }

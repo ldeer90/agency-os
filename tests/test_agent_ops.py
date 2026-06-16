@@ -15,7 +15,9 @@ from agency_bigquery.agent_ops import (
     approval_decision_to_action_status,
     build_agent_approval_row,
     build_context_pack,
+    complete_agent_run_lifecycle,
     daily_brief_markdown,
+    fail_agent_run_lifecycle,
     iso_date,
     load_agent_permissions,
     clean_client_slug,
@@ -24,6 +26,7 @@ from agency_bigquery.agent_ops import (
     normalize_action,
     normalize_finding,
     promise_tracker_output,
+    start_agent_run_lifecycle,
     sanitize_context_pack_sections,
     task_hygiene_issues,
     validate_permissions_safe_default,
@@ -365,6 +368,82 @@ class AgentOpsTest(unittest.TestCase):
             self.assertEqual(summary["metrics"]["active_runs"], 0)
             self.assertEqual(summary["metrics"]["succeeded"], 1)
             self.assertIn("promise_tracker: succeeded run run-1", agent_activity_markdown(summary))
+
+    def test_agent_run_lifecycle_start_success_and_failure(self) -> None:
+        with TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            index_path = base / "index.json"
+            active_dir = base / "active"
+
+            started = start_agent_run_lifecycle(
+                index_path=index_path,
+                active_dir=active_dir,
+                run_id="run-success",
+                agent_id="content_writer_agent",
+                agent_name="Content Writer Agent",
+                started_at="2026-06-13T01:00:00+00:00",
+                mode="local_context",
+                dry_run=True,
+                input_sources=["brief.html"],
+                output_path="/tmp/content.html",
+                run_json_path="/tmp/content.json",
+            )
+
+            self.assertEqual(started["status"], "running")
+            self.assertTrue((active_dir / "content-writer-agent.json").exists())
+            active = agent_activity_for_date(index_path, active_dir, date(2026, 6, 13))
+            self.assertEqual(active["metrics"]["active_runs"], 1)
+
+            completed = complete_agent_run_lifecycle(
+                index_path=index_path,
+                active_dir=active_dir,
+                run_row={
+                    **started,
+                    "status": "succeeded",
+                    "completed_at": "2026-06-13T01:02:00+00:00",
+                    "findings_count": 3,
+                    "actions_count": 1,
+                },
+                output_path="/tmp/content.html",
+                run_json_path="/tmp/content.json",
+                bigquery_logged=True,
+            )
+
+            self.assertEqual(completed["status"], "succeeded")
+            self.assertTrue(completed["bigquery_logged"])
+            self.assertFalse((active_dir / "content-writer-agent.json").exists())
+            summary = agent_activity_for_date(index_path, active_dir, date(2026, 6, 13))
+            self.assertEqual(summary["metrics"]["active_runs"], 0)
+            self.assertEqual(summary["metrics"]["succeeded"], 1)
+            self.assertEqual(summary["runs"][0]["findings_count"], 3)
+
+            start_agent_run_lifecycle(
+                index_path=index_path,
+                active_dir=active_dir,
+                run_id="run-failed",
+                agent_id="content_research_agent",
+                agent_name="Content Research Agent",
+                started_at="2026-06-13T02:00:00+00:00",
+                mode="local_context",
+                dry_run=True,
+            )
+            failed = fail_agent_run_lifecycle(
+                index_path=index_path,
+                active_dir=active_dir,
+                run_id="run-failed",
+                agent_id="content_research_agent",
+                agent_name="Content Research Agent",
+                started_at="2026-06-13T02:00:00+00:00",
+                mode="local_context",
+                exc=RuntimeError("Bearer " + ("x" * 24)),
+                dry_run=True,
+            )
+
+            self.assertEqual(failed["status"], "failed")
+            self.assertEqual(failed["error_message"], "RuntimeError: [redacted]")
+            self.assertFalse((active_dir / "content-research-agent.json").exists())
+            summary = agent_activity_for_date(index_path, active_dir, date(2026, 6, 13))
+            self.assertEqual(summary["metrics"]["failed"], 1)
 
     def test_agent_operating_table_specs_include_required_tables(self) -> None:
         table_names = {spec.table for spec in agent_operating_table_specs(test_config())}

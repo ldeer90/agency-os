@@ -1,4 +1,4 @@
-import { cn, toneClass } from "../lib/utils";
+import { cn, humanizeValue, toneClass, toneLabel } from "../lib/utils";
 
 export function Button({ className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
@@ -35,10 +35,10 @@ export function MetricCard({ label, value, source, tone = "neutral", onClick, ar
     <>
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-slate-600">{label}</p>
-        <Badge tone={tone}>{tone === "neutral" ? "info" : tone}</Badge>
+        <Badge tone={tone}>{toneLabel(tone)}</Badge>
       </div>
       <div className="mt-3 text-2xl font-semibold text-slate-950">{value}</div>
-      <p className="mt-2 truncate text-xs text-slate-500" title={source}>{source}</p>
+      <p className="mt-2 truncate text-xs text-slate-500" title={source}>{humanizeValue(source)}</p>
     </>
   );
   if (onClick) {

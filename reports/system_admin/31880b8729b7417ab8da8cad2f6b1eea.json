@@ -1,0 +1,121 @@
+{
+  "bigquery_loaded": null,
+  "check_rows": [
+    {
+      "check_category": "cost_guardrails",
+      "check_name": "local_cost_config",
+      "check_status": "ok",
+      "client_slug": "agency-system",
+      "details": {
+        "admin_query_cap": "10.00 GB",
+        "default_location": "australia-southeast1",
+        "dry_run_required": true,
+        "normal_query_cap": "1.00 GB",
+        "pricing_mode": "on_demand",
+        "project_id": "seo-agency-work"
+      },
+      "finding_type": null,
+      "observed_at": "2026-06-14T18:02:45.855888+10:00",
+      "priority": null,
+      "recommended_action": "Review config/bigquery_cost_guardrails.json before running live warehouse checks.",
+      "severity": "high",
+      "source": "config/bigquery_cost_guardrails.json",
+      "source_ref_hash": "9270e41b5e00761c2eb46c277ca22fd7",
+      "summary": "Local BigQuery cost guardrail config matches the expected AgencyOS defaults."
+    },
+    {
+      "check_category": "agent_runs",
+      "check_name": "local_run_index",
+      "check_status": "ok",
+      "client_slug": "agency-system",
+      "details": {
+        "runs": 7
+      },
+      "finding_type": null,
+      "observed_at": "2026-06-14T18:02:45.855888+10:00",
+      "priority": null,
+      "recommended_action": null,
+      "severity": null,
+      "source": "data/agent_runs/index.json",
+      "source_ref_hash": "c1fcd0984595fd6f5cfa2562cbb8fa86",
+      "summary": "Local agent run index is readable with 7 indexed run(s)."
+    }
+  ],
+  "context_pack": {
+    "agent_id": "system_admin_agent",
+    "client_slug": null,
+    "context_id": "8f4747ade38d5f6d770d5af1f8031e0f",
+    "created_at": "2026-06-14T18:02:45.855888+10:00",
+    "retention_hint": "operational_summary",
+    "run_id": "31880b8729b7417ab8da8cad2f6b1eea",
+    "sections_json": {
+      "metrics": {
+        "actions": 0,
+        "checks_failed": 0,
+        "checks_ok": 2,
+        "checks_warn": 0,
+        "findings": 0,
+        "route_verification_gaps": 0,
+        "rows_reviewed": 2
+      },
+      "rows_reviewed": 2,
+      "sample_client_slugs": [
+        "agency-system",
+        "agency-system"
+      ]
+    },
+    "source_ref_hash": "996b36cbbc88b925f3625e106ae519ef",
+    "source_tables_json": [
+      "config/bigquery_cost_guardrails.json",
+      "data/agent_runs/index.json",
+      "data/agent_runs/active/*.json",
+      "agency_control.ingestion_runs",
+      "agency_control.cost_checks",
+      "agency_reporting.client_health_check"
+    ],
+    "task_type": "agencyos_system_admin_sweep"
+  },
+  "output": {
+    "actions": [],
+    "agent_id": "system_admin_agent",
+    "created_at": "2026-06-14T18:02:45.855888+10:00",
+    "findings": [],
+    "metrics": {
+      "actions": 0,
+      "checks_failed": 0,
+      "checks_ok": 2,
+      "checks_warn": 0,
+      "findings": 0,
+      "route_verification_gaps": 0,
+      "rows_reviewed": 2
+    },
+    "run_id": "31880b8729b7417ab8da8cad2f6b1eea",
+    "summary": "Reviewed 2 AgencyOS system admin check row(s) and found 0 item(s) needing review."
+  },
+  "run_log": {
+    "actions_count": 0,
+    "agent_id": "system_admin_agent",
+    "agent_name": "System Admin Agent",
+    "automation_id": null,
+    "bigquery_write_status": "dry_run",
+    "completed_at": "2026-06-14T18:02:45.857510+10:00",
+    "context_id": "8f4747ade38d5f6d770d5af1f8031e0f",
+    "dry_run": true,
+    "error_message": null,
+    "findings_count": 0,
+    "input_sources_json": [
+      "config/bigquery_cost_guardrails.json",
+      "data/agent_runs/index.json",
+      "data/agent_runs/active/*.json",
+      "agency_control.ingestion_runs",
+      "agency_control.cost_checks",
+      "agency_reporting.client_health_check"
+    ],
+    "mode": "local_context",
+    "output_path": "/Users/laurencedeer/Projects/Codex/Big Query/reports/system_admin/31880b8729b7417ab8da8cad2f6b1eea.json",
+    "prompt_version": "system_admin_agent/v001",
+    "run_id": "31880b8729b7417ab8da8cad2f6b1eea",
+    "started_at": "2026-06-14T18:02:45.855888+10:00",
+    "status": "succeeded"
+  }
+}

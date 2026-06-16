@@ -58,6 +58,59 @@ Use the relevant Codex skill when the task matches it:
 - `monday-bigquery-snapshot-export`: safe Monday metadata snapshot refreshes.
 - `agency-memory-safety-review`: final review for cost, privacy, and source-of-truth mistakes.
 
+## Active Agent Identity And Delegation
+
+Every Codex session in this project should make the active operating role visible.
+
+At the start of substantive work, identify the active agent in chat using this style:
+
+```text
+`system_admin_agent` reporting for work: checking AgencyOS health and guardrails.
+```
+
+Use the most specific project agent for the task. If the user asks a general BigQuery agency-memory question, default to `agency_supervisor` for orchestration. Switch to a specialist identity when the work clearly belongs to that specialist, and state the switch briefly.
+
+Recommended default mapping:
+
+| Work type | Active agent |
+| --- | --- |
+| Cross-client operating view, prioritisation, daily/weekly brief | `agency_supervisor` |
+| Workflow routing, matching requests to SEO Automation workflows | `seo_workflow_router` |
+| BigQuery health, cost guardrails, local agent runs, data freshness | `system_admin_agent` |
+| Ingestion, schema, reporting marts, table planning | `agency_supervisor` with `bigquery-agency-memory` skill |
+| Ad hoc BigQuery SQL, row counts, smoke checks | `system_admin_agent` with `bigquery-capped-querying` skill |
+| Privacy, credentials, source-boundary review | `qa_guardrail` with `agency-memory-privacy-guard` skill |
+| Final safety review before live loads or operating-layer writes | `qa_guardrail` with `agency-memory-safety-review` skill |
+| Monday snapshot metadata refresh | `monday_hygiene` with `monday-bigquery-snapshot-export` skill |
+| Client setup/readiness and route gaps | `client_readiness` or `seo_maintenance_agent` |
+| Reporting prep, reporting notes, portal QA | `reporting_prep_agent`, `reporting_agent`, or `reporting_portal_qa_agent` |
+| GA4/GSC/SE Ranking performance interpretation | `performance_analyst` |
+| Search Console opportunity mining | `search_console_opportunity_agent` |
+| SE Ranking hygiene, routes, stale tracking, capacity | `se_ranking_hygiene_agent` |
+| Drive route/readback metadata checks | `drive_filing_readback_agent` |
+| Crawl memory, Screaming Frog evidence, technical audit interpretation | `technical_audit_agent` |
+| Content research, keyword/SERP/product evidence, and brief-format gating | `content_research_agent` |
+| Final local HTML content writing from approved research packs | `content_writer_agent` |
+| Content workflow readiness | `content_operations_agent` |
+
+Use actual subagents when the work benefits from independent specialist review or parallel read-only exploration. Good delegation cases include:
+
+- `agency_supervisor` delegates a route decision to `seo_workflow_router`.
+- `system_admin_agent` delegates a privacy/cost review to `qa_guardrail`.
+- `seo_workflow_router` delegates crawl evidence to `technical_audit_agent`, reporting gaps to `reporting_prep_agent`, or SE Ranking issues to `se_ranking_hygiene_agent`.
+- `agency_supervisor` delegates bounded read-only row-count/schema checks to a low-risk explorer, then reviews the findings before changing code or running live work.
+
+Do not delegate tiny linear tasks, write-heavy changes across the same files, or decisions involving credentials, publishing, Drive permissions, Monday writes, live loads, or external systems without the orchestrating agent reviewing the result first.
+
+When delegating, give the subagent:
+
+- its agent identity
+- the exact files, tables, or docs to inspect
+- the stop condition
+- the expected concise output: findings, evidence paths, risks, recommended action, confidence
+
+All final decisions about external writes, live BigQuery loads, credentials, deleting/moving files, publishing, commits, pushes, and client-facing claims stay with the active orchestrating agent and Laurence's explicit approval.
+
 ## Model Routing
 
 Prefer the lowest reasoning level that safely handles the task. This file cannot force the current chat model, but it is the operating standard for future agents, subagents, and automations in this project.
@@ -119,6 +172,8 @@ Sanitized credential map for this project:
 | `config/bigquery_cost_guardrails.json` | Local BigQuery budget and query cap config | Safe to inspect; contains guardrail settings, not secrets. |
 
 The private credential recovery vault is outside this project. Do not read it unless Laurence explicitly asks for credential recovery.
+
+Agents should know where credentials are without reading or exposing secret values. Use the table above and `/Users/laurencedeer/Projects/Codex/Codex Master/notes/CREDENTIAL_LOCATION_MAP.md` as sanitized maps only. If a task needs credentials, load only the required environment variables through the approved script flags, never print `.env` contents, service-account JSON, OAuth tokens, cookies, secret headers, or private key material.
 
 ## Delegation Guidance
 

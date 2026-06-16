@@ -1,7 +1,7 @@
 import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable, type ColumnDef, type SortingState } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { ArrowUpDown } from "lucide-react";
-import { formatMelbourneDateTime, isTimestampColumn } from "../lib/utils";
+import { formatMelbourneDateTime, humanizeLabel, humanizeValue, isTimestampColumn } from "../lib/utils";
 
 interface DataTableProps {
   rows: Array<Record<string, unknown>>;
@@ -82,6 +82,18 @@ function withClientBranding(rows: Array<Record<string, unknown>>, clientRows: Ar
   });
 }
 
+function formatCurrency(value: unknown) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return humanizeValue(value);
+  return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(numeric);
+}
+
+function formatRate(value: unknown) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return humanizeValue(value);
+  return `${(Math.abs(numeric) <= 1 ? numeric * 100 : numeric).toFixed(1)}%`;
+}
+
 export function DataTable({ rows, columns, emptyLabel = "No rows", clientRows = [], onRowClick, rowAriaLabel }: DataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const displayRows = useMemo(() => withClientBranding(rows, clientRows), [rows, clientRows]);
@@ -91,7 +103,7 @@ export function DataTable({ rows, columns, emptyLabel = "No rows", clientRows = 
         accessorKey: column,
         header: ({ column: tableColumn }) => (
           <button className="flex items-center gap-1 text-left" onClick={() => tableColumn.toggleSorting()}>
-            <span>{column.replaceAll("_", " ")}</span>
+            <span>{humanizeLabel(column)}</span>
             <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
           </button>
         ),
@@ -114,13 +126,15 @@ export function DataTable({ rows, columns, emptyLabel = "No rows", clientRows = 
             return (
               <span className="flex min-w-0 items-center gap-2">
                 {mark}
-                <span className="truncate">{String(value ?? original.client_slug ?? original.client_name ?? "—")}</span>
+                <span className="truncate">{humanizeValue(value ?? original.client_slug ?? original.client_name ?? "—")}</span>
               </span>
             );
           }
-          if (typeof value === "boolean") return value ? "Yes" : "No";
+          if (typeof value === "boolean") return humanizeValue(value);
           if (value === null || value === undefined || value === "") return "—";
           if (isTimestampColumn(column)) return formatMelbourneDateTime(value);
+          if (column.endsWith("_amount_aud") || column.endsWith("_total_aud") || column === "cost_per_month_aud") return formatCurrency(value);
+          if (column.endsWith("_rate") || column.endsWith("_ratio")) return formatRate(value);
           if (column.endsWith("_url")) {
             const href = String(value);
             return (
@@ -138,7 +152,7 @@ export function DataTable({ rows, columns, emptyLabel = "No rows", clientRows = 
             if (label === "0.0%") className = "font-medium text-slate-600";
             return <span className={className}>{label}</span>;
           }
-          return String(value);
+          return humanizeValue(value);
         }
       })),
     [columns]

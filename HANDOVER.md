@@ -1,6 +1,6 @@
 # BigQuery Agency Memory Handover
 
-Last updated: 2026-06-13.
+Last updated: 2026-06-16.
 
 This folder manages Laurence Deer's BigQuery agency memory for project `seo-agency-work`. It is designed for low-cost, read-only agency ops and performance reporting.
 
@@ -28,6 +28,7 @@ Local operating-layer MVP:
 - Safe operating permissions live in `config/permissions.yaml`.
 - `scripts/run_promise_tracker.py` runs a dry-run Promise Tracker from summarized comms.
 - `scripts/run_daily_agency_brief.py` writes a dry-run daily brief to `reports/daily/`.
+- `scripts/run_system_admin_agent.py` runs a read-only AgencyOS core system sweep and writes local JSON/Markdown reports to `reports/system_admin/`.
 - Monday task oddities are currently surfaced as `monday_hygiene` cleanup candidates, not delivery failures.
 - Shared validation and output helpers live in `agency_bigquery/agent_ops.py`.
 - Agent operating table definitions are available for `agent_run_log`, `agent_findings`, `agent_actions`, `agent_approvals`, `context_packs`, and `llm_usage_log`.
@@ -41,6 +42,41 @@ Model routing:
 - Use `gpt-5.5` with `medium` reasoning for schemas, loaders, marts, API smoke scripts, or implementation changes.
 - Use `gpt-5.5` with `high` reasoning for privacy, credential, Drive write-safety, cost-guardrail, or source-of-truth reviews.
 - Close subagents after use so the thread pool stays available.
+
+## 2026-06-16 Activity Log
+
+Headroom context-compression evaluation and rollout:
+
+- Created a fenced local pilot in `experiments/headroom-eval/` with safe real-shaped fixtures for BigQuery health output, Monday task metadata, crawl summaries, reporting performance summaries, and terminal logs.
+- Added repeatable fixture and evaluation scripts:
+  - `experiments/headroom-eval/scripts/make_safe_fixtures.py`
+  - `experiments/headroom-eval/scripts/evaluate_headroom.py`
+- Ran the evaluation with real Headroom from an isolated experiment venv and confirmed all five fixtures preserved required facts with no privacy flags.
+- Latest fixture results:
+  - `bigquery_health.json`: 51.2% saved, preserve pass.
+  - `crawl_summary.json`: 62.1% saved, preserve pass.
+  - `monday_metadata.json`: 58.9% saved, preserve pass.
+  - `reporting_performance.json`: 65.5% saved, preserve pass.
+  - `terminal_logs.json`: 90.2% saved, preserve pass.
+- Decided Headroom is useful for bulky safe outputs, but not for raw credentials, raw Drive/Docs/email content, Monday comments/updates, or live BigQuery runner internals.
+- Installed a central Headroom runtime from Codex Master at `/Users/laurencedeer/Projects/Codex/Codex Master/tools/headroom-runtime/.venv`.
+- Backed up Codex config to `/Users/laurencedeer/.codex/config.toml.headroom-backup-20260616-050250`, then registered Codex to use the local Headroom provider at `http://127.0.0.1:8787/v1`.
+- Installed Headroom persistent service profile `default`; health checks reported `running` and `Healthy: yes` on `127.0.0.1:8787`.
+- Added Codex Master monitoring and launcher helpers:
+  - `/Users/laurencedeer/Projects/Codex/Codex Master/scripts/headroom_codex_proxy.sh`
+  - `/Users/laurencedeer/Projects/Codex/Codex Master/scripts/codex_with_headroom.sh`
+  - `/Users/laurencedeer/Projects/Codex/Codex Master/scripts/headroom_run_report.py`
+- Ran CLI smoke tests from both `Big Query` and `SEO Automation`; both routed through provider `headroom` and returned `HEADROOM_SMOKE_OK`.
+- Current smoke-run monitor result from Codex Master: 6 requests, 127,030 input tokens before optimization, 126,558 after, 472 saved, p95 latency about 4.5 seconds, 0 errors, and no message-content logging detected.
+- No live BigQuery queries were run for the Headroom work, and no cost-check rows were written.
+
+Other Codex/AgencyOS activity visible in the working tree:
+
+- `system_admin_agent`, `content_research_agent`, and `content_writer_agent` local agent files/prompts/scripts/tests are present as uncommitted work.
+- Dashboard/API sync, scoring, UI, and publish-related files are present as uncommitted work.
+- Finance load work is present locally, including `scripts/load_client_finance.py`, finance tests, and `data/finance/`.
+- A content refresh note exists at `docs/avenue-hampers-fathers-day-dad-content-refresh-2026-06-16.md`.
+- These existing changes were treated as user/local work and were not reverted or committed during the Headroom rollout.
 
 ## Key Tables
 
@@ -60,6 +96,8 @@ Agency ops memory:
 - `agency_memory.client_roadmap_sources`
 - `agency_memory.client_roadmap_items`
 - `agency_memory.client_health_assets`
+- `agency_memory.client_finance_monthly`
+- `agency_memory.agency_expenses_monthly`
 
 Agent-facing reporting:
 
@@ -78,6 +116,7 @@ Agent-facing reporting:
 - `agency_reporting.client_roadmap_current`
 - `agency_reporting.client_roadmap_monthly_completion`
 - `agency_reporting.client_health_check`
+- `agency_reporting.client_finance_health`
 - `agency_reporting.reporting_readiness`
 - `agency_reporting.ops_drift_summary`
 
@@ -104,6 +143,13 @@ Agent-facing reporting:
 - Verified companion assets include Drive folder metadata checks, bounded roadmap content validation, local Monday board snapshot proof, and sanitized GA4/Search Console/SE Ranking API smoke checks. Missing live verification evidence should remain `unknown`, not be silently treated as present.
 - Normal `scripts/ingest_agency_ops.py` runs `scripts/validate_client_health_verifications.py` before dry-runs and live loads, blocking required verified Drive/API assets that are still `unknown`. Use `--skip-health-verification-preflight` only for diagnostics.
 - Latest live health-hardening refresh run ID: `089d8f8cace146b1a0d5b80b591c256e`.
+- Client finance retainers are loaded into BigQuery from `data/finance/client_retainers_2026.json` with current/future retainer amounts overlaid from the local Monday Client Board snapshot `board_5026765711.json`.
+- Agency operating expenses are loaded into `agency_memory.agency_expenses_monthly` from the local Monday Expenses board snapshot at `/Users/laurencedeer/Projects/Codex/monday-agency-hub/data/snapshots/board_5027236764.json`.
+- Latest finance load run ID: `44dc8718df044e33b963e72ffb1e9a22`.
+- `agency_memory.client_finance_monthly`: 120 rows.
+- `agency_memory.agency_expenses_monthly`: 221 rows.
+- `agency_reporting.client_finance_health`: 120 rows.
+- Current 13-month finance projection has A$239,240 billable retainers and A$35,954.50 active projected Monday expenses. TravelKon is projected at A$14,200/month from August 2026 through January 2027, and other primary client retainers are projected flat into January 2027 unless Laurence says otherwise.
 
 ## Source Of Truth Rules
 
@@ -152,6 +198,18 @@ Dry-run operating layer:
 ```bash
 .venv/bin/python scripts/run_promise_tracker.py
 .venv/bin/python scripts/run_daily_agency_brief.py
+.venv/bin/python scripts/run_system_admin_agent.py --dry-run
+```
+
+Refresh local Monday snapshots, then load finance retainers and Monday board costs:
+
+```bash
+cd "/Users/laurencedeer/Projects/Codex/monday-agency-hub"
+./scripts/map_workspace.sh
+
+cd "/Users/laurencedeer/Projects/Codex/Big Query"
+.venv/bin/python scripts/load_client_finance.py --dry-run
+.venv/bin/python scripts/load_client_finance.py
 ```
 
 Offline operating-layer validation:
@@ -199,5 +257,5 @@ Safe ad hoc BigQuery query:
 7. Add Codex Automations for weekday Daily Agency Brief, weekly Promise Review, and weekly Monday Hygiene Review after the first BigQuery logging run is verified.
 8. Add a reporting automation workflow that creates client-ready summaries from `agency_reporting.client_monthly_performance_history`.
 9. Add a Drive filing readback step for generated reports: record title, file ID, URL, folder route, created timestamp, and proof of readback, but never raw document contents.
-10. Add a weekly health check that confirms recent ingestion runs, cost-check rows, and table freshness.
+10. After the first manual `system_admin_agent` dry run is reviewed, add a weekly read-only automation for the system admin sweep.
 11. Keep expanding `docs/QUERY_COOKBOOK.md` with real questions future agents ask.

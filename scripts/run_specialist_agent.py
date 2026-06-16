@@ -12,7 +12,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from agency_bigquery.agent_logging import log_agent_output  # noqa: E402
-from agency_bigquery.agent_ops import build_agent_run_row, utc_now_iso  # noqa: E402
+from agency_bigquery.agent_ops import (  # noqa: E402
+    build_agent_run_row,
+    complete_agent_run_lifecycle,
+    fail_agent_run_lifecycle,
+    start_agent_run_lifecycle,
+    utc_now_iso,
+)
 from agency_bigquery.capped_query_runner import CappedBigQueryRunner  # noqa: E402
 from agency_bigquery.cost_config import DEFAULT_CONFIG_PATH, BigQueryCostConfig  # noqa: E402
 from agency_bigquery.seo_automation_catalog import DEFAULT_SEO_AUTOMATION_ROOT  # noqa: E402
@@ -26,6 +32,7 @@ from agency_bigquery.specialist_agents import (  # noqa: E402
 
 SAFE_ENV_KEYS = {"GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_CLOUD_PROJECT"}
 DEFAULT_AGENT_RUN_INDEX = PROJECT_ROOT / "data" / "agent_runs" / "index.json"
+DEFAULT_ACTIVE_RUN_DIR = PROJECT_ROOT / "data" / "agent_runs" / "active"
 
 
 def load_env_file(path: Path) -> None:
@@ -53,8 +60,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("agent_id", choices=sorted(SPECIALIST_AGENT_CONFIGS), help="Specialist agent to run.")
     parser.add_argument("--seo-automation-root", default=str(DEFAULT_SEO_AUTOMATION_ROOT), help="SEO Automation repo root for local dry-runs.")
     parser.add_argument("--from-bigquery", action="store_true", help="Read context from BigQuery through the capped runner.")
-    parser.add_argument("--write-bigquery", action="store_true", help="Log validated findings/actions/run/context to BigQuery.")
-    parser.add_argument("--dry-run", action="store_true", help="Local/report-only mode. This is the default unless --write-bigquery is passed.")
+    parser.add_argument("--write-bigquery", action="store_true", help="Log validated findings/actions/run/context to BigQuery. BigQuery-context runs log on completion by default unless --dry-run is used.")
+    parser.add_argument("--dry-run", action="store_true", help="Local/report-only mode. Use with --from-bigquery to read live context without writing completion metadata.")
     parser.add_argument("--ensure-tables", action="store_true", help="Create/verify operating tables before BigQuery logging.")
     parser.add_argument("--automation-id", default=os.environ.get("SEO_AGENCY_OS_AUTOMATION_ID"), help="Optional automation ID.")
     parser.add_argument("--client-slug", help="Limit review to one client slug.")
@@ -200,6 +207,68 @@ QUALIFY ROW_NUMBER() OVER (PARTITION BY s.client_slug ORDER BY s.synced_at DESC)
 ORDER BY client_slug
 LIMIT {int(limit)}
 """
+    elif agent_id == "content_research_agent":
+        filter_sql = _client_filter(client_slug, field="s.client_slug")
+        sql = f"""
+SELECT
+  s.client_slug,
+  s.client_name,
+  s.domain,
+  s.site_type,
+  s.market_scope,
+  s.workflow_profile,
+  s.sidecar_path,
+  s.brief_path,
+  s.timeline_path,
+  s.sidecar_present,
+  s.brief_present,
+  s.timeline_present,
+  s.has_search_console_route,
+  s.has_se_ranking,
+  s.has_monday_route,
+  s.has_drive_root,
+  s.collection_count,
+  s.priority_pages_count,
+  s.deliverables_json,
+  'agency_memory.seo_client_memory_summaries' AS source_table,
+  s.source_ref_hash
+FROM `{project}.{memory}.seo_client_memory_summaries` s
+{filter_sql}
+QUALIFY ROW_NUMBER() OVER (PARTITION BY s.client_slug ORDER BY s.synced_at DESC) = 1
+ORDER BY s.client_slug
+LIMIT {int(limit)}
+"""
+    elif agent_id == "content_writer_agent":
+        filter_sql = _client_filter(client_slug, field="s.client_slug")
+        sql = f"""
+SELECT
+  s.client_slug,
+  s.client_name,
+  s.domain,
+  s.site_type,
+  s.market_scope,
+  s.workflow_profile,
+  s.sidecar_path,
+  s.brief_path,
+  s.timeline_path,
+  s.sidecar_present,
+  s.brief_present,
+  s.timeline_present,
+  s.has_search_console_route,
+  s.has_se_ranking,
+  s.has_monday_route,
+  s.has_drive_root,
+  s.collection_count,
+  s.priority_pages_count,
+  s.deliverables_json,
+  'agency_memory.seo_client_memory_summaries' AS source_table,
+  s.source_ref_hash
+FROM `{project}.{memory}.seo_client_memory_summaries` s
+{filter_sql}
+QUALIFY ROW_NUMBER() OVER (PARTITION BY s.client_slug ORDER BY s.synced_at DESC) = 1
+ORDER BY s.client_slug
+LIMIT {int(limit)}
+"""
     else:
         raise SystemExit(f"Unsupported agent: {agent_id}")
     _, rows = runner.run_query(sql, purpose=f"{agent_id}: read specialist context")
@@ -208,90 +277,138 @@ LIMIT {int(limit)}
 
 def run(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    if args.write_bigquery and not args.from_bigquery:
+    should_write_bigquery = (args.write_bigquery or args.from_bigquery) and not args.dry_run
+    if should_write_bigquery and not args.from_bigquery:
         raise SystemExit("--write-bigquery requires --from-bigquery for specialist agents")
     run_id = args.run_id or uuid4().hex
     started_at = utc_now_iso()
-    config = BigQueryCostConfig.from_file(args.config)
-    if args.load_env:
-        load_env_file(Path(args.load_env))
-    if args.from_bigquery:
-        rows = read_bigquery_rows(args.agent_id, config, limit=args.limit, client_slug=args.client_slug)
-        mode = "bigquery"
-    else:
-        rows = local_client_rows(
-            run_id=run_id,
-            seo_automation_root=args.seo_automation_root,
-            client_slug=args.client_slug,
-        )[: args.limit]
-        mode = "local_context"
-    output = output_for_agent(args.agent_id, rows, run_id=run_id, created_at=started_at)
-    context_pack = context_pack_for_output(
-        agent_id=args.agent_id,
-        run_id=run_id,
-        created_at=started_at,
-        rows=rows,
-        output=output,
-        client_slug=args.client_slug,
-    )
     agent_config = SPECIALIST_AGENT_CONFIGS[args.agent_id]
-    run_row = build_agent_run_row(
+    mode = "bigquery" if args.from_bigquery else "local_context"
+    default_dir = PROJECT_ROOT / "data" / "agent_runs" / args.agent_id
+    output_path = Path(args.output_json) if args.output_json else default_dir / f"{run_id}.json"
+    start_agent_run_lifecycle(
+        index_path=DEFAULT_AGENT_RUN_INDEX,
+        active_dir=DEFAULT_ACTIVE_RUN_DIR,
         run_id=run_id,
         automation_id=args.automation_id,
         agent_id=args.agent_id,
         agent_name=agent_config.agent_name,
         started_at=started_at,
-        completed_at=utc_now_iso(),
-        status="succeeded",
         mode=mode,
         prompt_version=agent_config.prompt_version,
-        context_id=context_pack["context_id"],
-        input_sources=context_pack["source_tables_json"],
-        output_path=None,
-        findings_count=len(output["findings"]),
-        actions_count=len(output["actions"]),
-        dry_run=not args.write_bigquery,
-        bigquery_write_status="succeeded" if args.write_bigquery else "dry_run",
+        input_sources=["pending_context_resolution"],
+        output_path=str(output_path),
+        run_json_path=str(output_path),
+        dry_run=not should_write_bigquery,
     )
-    loaded = None
-    if args.write_bigquery:
-        from google.cloud import bigquery
+    config = BigQueryCostConfig.from_file(args.config)
+    try:
+        if args.load_env:
+            load_env_file(Path(args.load_env))
+        if args.agent_id == "system_admin_agent":
+            from run_system_admin_agent import local_check_rows, read_bigquery_rows
 
-        client = bigquery.Client(project=config.project_id)
-        loaded = log_agent_output(
-            client,
-            config,
+            rows = local_check_rows(config, created_at=started_at)
+            if args.from_bigquery:
+                rows.extend(read_bigquery_rows(config, limit=args.limit))
+        elif args.from_bigquery:
+            rows = read_bigquery_rows(args.agent_id, config, limit=args.limit, client_slug=args.client_slug)
+        else:
+            rows = local_client_rows(
+                run_id=run_id,
+                seo_automation_root=args.seo_automation_root,
+                client_slug=args.client_slug,
+            )[: args.limit]
+        output = output_for_agent(args.agent_id, rows, run_id=run_id, created_at=started_at)
+        context_pack = context_pack_for_output(
+            agent_id=args.agent_id,
+            run_id=run_id,
+            created_at=started_at,
+            rows=rows,
+            output=output,
+            client_slug=args.client_slug,
+        )
+        run_row = build_agent_run_row(
+            run_id=run_id,
+            automation_id=args.automation_id,
+            agent_id=args.agent_id,
+            agent_name=agent_config.agent_name,
+            started_at=started_at,
+            completed_at=utc_now_iso(),
+            status="succeeded",
+            mode=mode,
+            prompt_version=agent_config.prompt_version,
+            context_id=context_pack["context_id"],
+            input_sources=context_pack["source_tables_json"],
+            output_path=str(output_path),
+            findings_count=len(output["findings"]),
+            actions_count=len(output["actions"]),
+            dry_run=not should_write_bigquery,
+            bigquery_write_status="succeeded" if should_write_bigquery else "dry_run",
+        )
+        loaded = None
+        if should_write_bigquery:
+            from google.cloud import bigquery
+
+            client = bigquery.Client(project=config.project_id)
+            loaded = log_agent_output(
+                client,
+                config,
+                run_row=run_row,
+                findings=output["findings"],
+                actions=output["actions"],
+                context_pack=context_pack,
+                dry_run=False,
+                ensure_tables_first=args.ensure_tables,
+                batch_id=run_id,
+                purpose=f"{args.agent_id}: log validated output",
+            )
+        payload = {**output, "run_log": run_row, "context_pack": context_pack, "bigquery_loaded": loaded}
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
+        complete_agent_run_lifecycle(
+            index_path=DEFAULT_AGENT_RUN_INDEX,
+            active_dir=DEFAULT_ACTIVE_RUN_DIR,
             run_row=run_row,
-            findings=output["findings"],
-            actions=output["actions"],
-            context_pack=context_pack,
-            dry_run=False,
-            ensure_tables_first=args.ensure_tables,
-            batch_id=run_id,
-            purpose=f"{args.agent_id}: log validated output",
+            output_path=str(output_path),
+            run_json_path=str(output_path),
+            bigquery_logged=bool(loaded),
         )
-    payload = {**output, "run_log": run_row, "context_pack": context_pack, "bigquery_loaded": loaded}
-    default_dir = PROJECT_ROOT / "data" / "agent_runs" / args.agent_id
-    output_path = Path(args.output_json) if args.output_json else default_dir / f"{run_id}.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
-    print(
-        json.dumps(
-            {
-                "status": "succeeded",
-                "run_id": run_id,
-                "agent_id": args.agent_id,
-                "dry_run": not args.write_bigquery,
-                "findings": len(output["findings"]),
-                "actions": len(output["actions"]),
-                "output_json": str(output_path),
-                "bigquery_loaded": loaded,
-            },
-            indent=2,
-            default=str,
+        print(
+            json.dumps(
+                {
+                    "status": "succeeded",
+                    "run_id": run_id,
+                    "agent_id": args.agent_id,
+                    "dry_run": not should_write_bigquery,
+                    "findings": len(output["findings"]),
+                    "actions": len(output["actions"]),
+                    "output_json": str(output_path),
+                    "bigquery_loaded": loaded,
+                },
+                indent=2,
+                default=str,
+            )
         )
-    )
-    return 0
+        return 0
+    except Exception as exc:
+        fail_agent_run_lifecycle(
+            index_path=DEFAULT_AGENT_RUN_INDEX,
+            active_dir=DEFAULT_ACTIVE_RUN_DIR,
+            run_id=run_id,
+            automation_id=args.automation_id,
+            agent_id=args.agent_id,
+            agent_name=agent_config.agent_name,
+            started_at=started_at,
+            mode=mode,
+            prompt_version=agent_config.prompt_version,
+            input_sources=["pending_context_resolution"],
+            output_path=str(output_path),
+            run_json_path=str(output_path),
+            dry_run=not should_write_bigquery,
+            exc=exc,
+        )
+        raise
 
 
 if __name__ == "__main__":

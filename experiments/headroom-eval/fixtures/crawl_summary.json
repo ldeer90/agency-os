@@ -1,0 +1,585 @@
+{
+  "must_preserve": [
+    "retired-kit",
+    "404",
+    "missing",
+    "canonicalised-to-page-1"
+  ],
+  "privacy_level": "public_url_crawl_metadata",
+  "questions": [
+    "Which URL has a 404?",
+    "Which issue affects page 2?",
+    "What should be checked first?"
+  ],
+  "rows": [
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/1"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/2"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/3"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/4"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/5"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/6"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/7"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/8"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/9"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/10"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/11"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/12"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/13"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/14"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/15"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/16"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/17"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/18"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/19"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/20"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/21"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/22"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/23"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/24"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/25"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/26"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/27"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/28"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/29"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/30"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/31"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/32"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/33"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/34"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/35"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/36"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/37"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/38"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/39"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/40"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/41"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/42"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/43"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/44"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/45"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/46"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/47"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/48"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/49"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/50"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/51"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/52"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/53"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/54"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/55"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/56"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/57"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/58"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/59"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/60"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/61"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/62"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/63"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/64"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/65"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/66"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/67"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/68"
+    },
+    {
+      "canonical_status": "self",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "ok",
+      "url": "https://example.com/product/69"
+    },
+    {
+      "canonical_status": "none",
+      "client_slug": "shop-rongrong",
+      "indexability": "Non-Indexable",
+      "status_code": 404,
+      "title_status": "missing",
+      "url": "https://example.com/products/retired-kit"
+    },
+    {
+      "canonical_status": "canonicalised-to-page-1",
+      "client_slug": "shop-rongrong",
+      "indexability": "Indexable",
+      "status_code": 200,
+      "title_status": "duplicate",
+      "url": "https://example.com/collections/new-arrivals?page=2"
+    }
+  ],
+  "workflow": "crawl_summary"
+}

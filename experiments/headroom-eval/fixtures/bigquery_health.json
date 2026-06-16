@@ -1,0 +1,361 @@
+{
+  "must_preserve": [
+    "monthly_report_snapshots",
+    "client_finance_health",
+    "empty",
+    "stale"
+  ],
+  "privacy_level": "safe_metadata_only",
+  "questions": [
+    "Which tables need attention?",
+    "Which table is empty?",
+    "Which table is stale?"
+  ],
+  "rows": [
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 121,
+      "status": "ok",
+      "table": "client_table_01"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 122,
+      "status": "ok",
+      "table": "client_table_02"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 123,
+      "status": "ok",
+      "table": "client_table_03"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 124,
+      "status": "ok",
+      "table": "client_table_04"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 125,
+      "status": "ok",
+      "table": "client_table_05"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 126,
+      "status": "ok",
+      "table": "client_table_06"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 127,
+      "status": "ok",
+      "table": "client_table_07"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 128,
+      "status": "ok",
+      "table": "client_table_08"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 129,
+      "status": "ok",
+      "table": "client_table_09"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 130,
+      "status": "ok",
+      "table": "client_table_10"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 131,
+      "status": "ok",
+      "table": "client_table_11"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 132,
+      "status": "ok",
+      "table": "client_table_12"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 133,
+      "status": "ok",
+      "table": "client_table_13"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 134,
+      "status": "ok",
+      "table": "client_table_14"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 135,
+      "status": "ok",
+      "table": "client_table_15"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 136,
+      "status": "ok",
+      "table": "client_table_16"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 137,
+      "status": "ok",
+      "table": "client_table_17"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 138,
+      "status": "ok",
+      "table": "client_table_18"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 139,
+      "status": "ok",
+      "table": "client_table_19"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 140,
+      "status": "ok",
+      "table": "client_table_20"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 141,
+      "status": "ok",
+      "table": "client_table_21"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 142,
+      "status": "ok",
+      "table": "client_table_22"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 143,
+      "status": "ok",
+      "table": "client_table_23"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 144,
+      "status": "ok",
+      "table": "client_table_24"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 145,
+      "status": "ok",
+      "table": "client_table_25"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 146,
+      "status": "ok",
+      "table": "client_table_26"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 147,
+      "status": "ok",
+      "table": "client_table_27"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 148,
+      "status": "ok",
+      "table": "client_table_28"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 149,
+      "status": "ok",
+      "table": "client_table_29"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 150,
+      "status": "ok",
+      "table": "client_table_30"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 151,
+      "status": "ok",
+      "table": "client_table_31"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 152,
+      "status": "ok",
+      "table": "client_table_32"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 153,
+      "status": "ok",
+      "table": "client_table_33"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 154,
+      "status": "ok",
+      "table": "client_table_34"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 155,
+      "status": "ok",
+      "table": "client_table_35"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 156,
+      "status": "ok",
+      "table": "client_table_36"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 157,
+      "status": "ok",
+      "table": "client_table_37"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 158,
+      "status": "ok",
+      "table": "client_table_38"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 159,
+      "status": "ok",
+      "table": "client_table_39"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 160,
+      "status": "ok",
+      "table": "client_table_40"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": "2026-06-15T09:30:00+10:00",
+      "note": "routine memory table",
+      "row_count": 161,
+      "status": "ok",
+      "table": "client_table_41"
+    },
+    {
+      "dataset": "agency_memory",
+      "latest_loaded_at": null,
+      "note": "must investigate: expected published report summaries",
+      "row_count": 0,
+      "status": "empty",
+      "table": "monthly_report_snapshots"
+    },
+    {
+      "dataset": "agency_reporting",
+      "latest_loaded_at": "2026-06-10T08:00:00+10:00",
+      "note": "stale by 6 days",
+      "row_count": 120,
+      "status": "stale",
+      "table": "client_finance_health"
+    }
+  ],
+  "workflow": "bigquery_health"
+}

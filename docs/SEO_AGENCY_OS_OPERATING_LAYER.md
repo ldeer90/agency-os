@@ -5,6 +5,8 @@ This layer adds controlled Codex workflows around the existing BigQuery agency m
 ## Operating Pattern
 
 ```text
+identify active agent
+→ select required skills
 read approved summaries and marts
 → build a small context pack
 → create findings and suggested actions
@@ -32,6 +34,20 @@ agency_supervisor
 
 See `AGENT_POOL_REGISTRY.md` for the status of every agent.
 
+## Identity And Delegation
+
+Every substantive AgencyOS task should show which agent is currently doing the work. Use a short identity line in chat and handoffs:
+
+```text
+`reporting_prep_agent` reporting for work: checking monthly reporting gaps.
+```
+
+`agency_supervisor` orchestrates broad tasks and delegates to specialists when the work can be inspected independently. Specialist agents should be used as actual subagents when parallel read-only checks, specialist review, or source-specific judgment would improve the result. The supervisor must review delegated findings before live BigQuery loads, code changes, approval queues, reports, or external actions.
+
+Delegated subagents must get a bounded task, source scope, stop condition, and compact output contract. Do not use subagents for tiny linear tasks or for unsupervised external writes.
+
+Agents must load the relevant Codex skill instructions before work that matches a skill. Credential awareness is location-only: use the repo credential table and the master credential location map as sanitized maps, and never print raw `.env` values, service-account JSON contents, OAuth tokens, cookies, secret headers, or private key material.
+
 ## Current MVP Agents
 
 - `agency_supervisor`: SEO lead agent and daily/weekly operating brief owner.
@@ -42,6 +58,7 @@ See `AGENT_POOL_REGISTRY.md` for the status of every agent.
 - `performance_analyst`: reviews GA4, Search Console, SE Ranking, and BigQuery performance marts.
 - `reporting_agent`: drafts client-safe reporting notes only.
 - `technical_audit_agent`: owns monthly and post-task crawl interpretation from Screaming Frog MCP/CLI summaries.
+- `system_admin_agent`: sweeps AgencyOS core health, cost guardrails, local agent runs, data freshness, and route verification gaps.
 
 Future or compatibility-only agents: `client_comms_drafting` remains future, and `technical_seo` is a retired alias for `technical_audit_agent`.
 
@@ -64,6 +81,7 @@ Wrapper agents:
 - `seo_maintenance_agent`: recommends access, filing, SE Ranking, onboarding, and platform-reference cleanup actions.
 - `content_operations_agent`: coordinates content workflow readiness without drafting or publishing.
 - `technical_audit_agent`: prioritises Screaming Frog MCP/CLI, SE Ranking, Firecrawl, monthly baseline crawls, and post-task crawl evidence without running crawls automatically.
+- `system_admin_agent`: checks BigQuery datasets/tables, ingestion runs, capped-query cost checks, local agent activity, dashboard data-health signals, and route-vs-verified health gaps without performing repairs.
 
 The wrapper layer stores sanitized structured extracts only. It does not store raw timeline markdown, raw Drive/Docs/Sheets content, raw Gmail/Outlook/Monday conversations, credentials, or long private notes.
 
@@ -139,6 +157,7 @@ Run read-only specialist wrappers locally:
 .venv/bin/python scripts/run_se_ranking_hygiene_agent.py --dry-run
 .venv/bin/python scripts/run_reporting_portal_qa_agent.py --dry-run
 .venv/bin/python scripts/run_technical_audit_agent.py --dry-run
+.venv/bin/python scripts/run_system_admin_agent.py --dry-run
 ```
 
 Local runner metadata is indexed in `data/agent_runs/index.json`, and in-progress markers live under `data/agent_runs/active/`. Runners accept `--automation-id` or `SEO_AGENCY_OS_AUTOMATION_ID` so scheduled workflows can be tied back to their automation identity in local output and the optional run log.
@@ -246,6 +265,7 @@ Then smoke-test the operating layer locally:
 .venv/bin/python scripts/run_se_ranking_hygiene_agent.py --dry-run
 .venv/bin/python scripts/run_reporting_portal_qa_agent.py --dry-run
 .venv/bin/python scripts/run_technical_audit_agent.py --dry-run
+.venv/bin/python scripts/run_system_admin_agent.py --dry-run
 ```
 
 Offline CI runs:

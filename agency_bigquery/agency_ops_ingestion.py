@@ -1305,6 +1305,17 @@ def parse_client_health_assets(
         brief_presence, brief_notes = local_markdown_status(brief_path, require_heading=True)
         timeline_presence, timeline_notes = local_markdown_status(timeline_path, require_table_row=True)
         writing_style_presence, writing_style_notes = local_markdown_status(writing_style_path)
+        brand_writing_guide = sidecar.get("brand_writing_guide") if isinstance(sidecar.get("brand_writing_guide"), dict) else {}
+        brand_guide_doc_id = str(brand_writing_guide.get("google_doc_id") or "").strip()
+        brand_guide_doc_url = str(brand_writing_guide.get("google_doc_url") or "").strip()
+        brand_guide_folder_id = str(brand_writing_guide.get("drive_folder_id") or "").strip()
+        brand_guide_status = str(brand_writing_guide.get("status") or "").strip()
+        brand_guide_presence = "present" if brand_guide_doc_id and brand_guide_doc_url and brand_guide_folder_id else "missing"
+        brand_guide_notes = (
+            f"Client-editable brand writing guide Doc recorded with status `{brand_guide_status}`."
+            if brand_guide_presence == "present"
+            else "No client-editable brand writing guide Google Doc is recorded in the sidecar."
+        )
         reporting_presence, reporting_notes = reporting_config_status(reporting_client)
         report_presence, report_freshness, report_notes = monthly_report_snapshot_status(latest_reports.get(slug))
         ga4_smoke_presence, ga4_smoke_at, ga4_smoke_freshness, ga4_smoke_notes = api_smoke_status(api_smoke_verifications, slug, "ga4")
@@ -1316,6 +1327,7 @@ def parse_client_health_assets(
         add_health_asset(rows, run_id=run_id, ingested_at=ingested_at, snapshot_date=snapshot_date, client_slug=slug, client_name=client_name, asset_type="client_brief", asset_label="SEO Automation client brief", present=brief_presence == "present", expected=True, criticality="high", source_system="seo_automation", source_path=str(brief_path), freshness_date=file_freshness_date(brief_path), notes=brief_notes, presence_status=brief_presence, verification_level="local_content", verification_method="markdown_nonempty_heading")
         add_health_asset(rows, run_id=run_id, ingested_at=ingested_at, snapshot_date=snapshot_date, client_slug=slug, client_name=client_name, asset_type="timeline", asset_label="Client timeline", present=timeline_presence == "present", expected=True, criticality="medium", source_system="seo_automation", source_path=str(timeline_path), freshness_date=file_freshness_date(timeline_path), notes=timeline_notes, presence_status=timeline_presence, verification_level="local_content", verification_method="markdown_dated_table_rows")
         add_health_asset(rows, run_id=run_id, ingested_at=ingested_at, snapshot_date=snapshot_date, client_slug=slug, client_name=client_name, asset_type="writing_style", asset_label="Client writing-style guide", present=writing_style_presence == "present", expected=False, criticality="low", source_system="seo_automation", source_path=str(writing_style_path), freshness_date=file_freshness_date(writing_style_path), notes=writing_style_notes, presence_status=writing_style_presence, verification_level="local_content", verification_method="markdown_nonempty")
+        add_health_asset(rows, run_id=run_id, ingested_at=ingested_at, snapshot_date=snapshot_date, client_slug=slug, client_name=client_name, asset_type="brand_writing_guide_doc", asset_label="Client-editable brand writing guide Google Doc", present=brand_guide_presence == "present", expected=False, criticality="low", source_system="seo_automation_sidecar", source_path=str(sidecar_path) if sidecar_path.exists() else None, source_ref=brand_guide_doc_id or None, freshness_date=brand_writing_guide.get("created_at") if brand_writing_guide else None, notes=brand_guide_notes, presence_status=brand_guide_presence, verification_level="route_config", verification_method="sidecar_brand_writing_guide_google_doc")
         add_health_asset(rows, run_id=run_id, ingested_at=ingested_at, snapshot_date=snapshot_date, client_slug=slug, client_name=client_name, asset_type="drive_root", asset_label="Google Drive client folder route", present=bool(root_folder_id), expected=True, criticality="high", source_system="seo_automation_sidecar", source_path=str(sidecar_path) if sidecar_path.exists() else None, source_ref=root_folder_id or None, verification_level="route_config", verification_method="sidecar_folder_id")
         add_health_asset(rows, run_id=run_id, ingested_at=ingested_at, snapshot_date=snapshot_date, client_slug=slug, client_name=client_name, asset_type="drive_root_verified", asset_label="Verified Google Drive client folder", present=root_folder_status == "present", expected=True, criticality="high", source_system="google_drive_mcp", source_path=str(paths.drive_folder_verifications), source_ref=root_folder_id or None, freshness_date=root_freshness, notes=root_notes if root_folder_id else "No Drive root folder route is configured.", presence_status=root_folder_status if root_folder_id else "missing", verification_level="metadata_verified", verified_at=root_verified_at, verification_method="drive_mcp_folder_metadata")
         add_health_asset(rows, run_id=run_id, ingested_at=ingested_at, snapshot_date=snapshot_date, client_slug=slug, client_name=client_name, asset_type="drive_roadmap_folder", asset_label="Google Drive roadmap folder route configured", present=bool(roadmap_folder_id), expected=True, criticality="medium", source_system="seo_automation_sidecar", source_path=str(sidecar_path) if sidecar_path.exists() else None, source_ref=roadmap_folder_id or None, verification_level="route_config", verification_method="sidecar_folder_id")
@@ -2720,6 +2732,8 @@ asset_rollup AS (
     COUNTIF(asset_type = 'sidecar_json' AND presence_status = 'present') > 0 AS has_sidecar_json,
     COUNTIF(asset_type = 'client_brief' AND presence_status = 'present') > 0 AS has_client_brief,
     COUNTIF(asset_type = 'timeline' AND presence_status = 'present') > 0 AS has_timeline,
+    COUNTIF(asset_type = 'writing_style' AND presence_status = 'present') > 0 AS has_writing_style,
+    COUNTIF(asset_type = 'brand_writing_guide_doc' AND presence_status = 'present') > 0 AS has_brand_writing_guide_doc,
     COUNTIF(asset_type = 'drive_root' AND presence_status = 'present') > 0 AS has_drive_root,
     COUNTIF(asset_type = 'drive_root_verified' AND presence_status = 'present') > 0 AS has_drive_root_verified,
     COUNTIF(asset_type = 'drive_roadmap_folder' AND presence_status = 'present') > 0 AS has_roadmap_route,
@@ -2766,6 +2780,8 @@ SELECT
   r.has_sidecar_json,
   r.has_client_brief,
   r.has_timeline,
+  r.has_writing_style,
+  r.has_brand_writing_guide_doc,
   r.has_drive_root,
   r.has_drive_root_verified,
   r.has_roadmap_route,
@@ -2792,6 +2808,99 @@ FROM asset_rollup AS r
 LEFT JOIN latest_reports
   ON r.client_slug = latest_reports.client_slug
 """
+
+
+def client_finance_health_sql(project: str, memory: str, reporting: str) -> str:
+    return f"""
+CREATE OR REPLACE TABLE `{project}.{reporting}.client_finance_health`
+PARTITION BY month_start
+CLUSTER BY client_slug, finance_status AS
+WITH base AS (
+  SELECT
+    f.period_id,
+    f.month_start,
+    f.client_slug,
+    COALESCE(c.client_name, f.client_label, f.client_slug) AS client_name,
+    f.client_label,
+    f.billing_status,
+    f.retainer_amount_aud,
+    f.expense_amount_aud,
+    f.net_amount_aud,
+    f.is_billable,
+    f.month_start <= DATE_TRUNC(CURRENT_DATE('Australia/Melbourne'), MONTH) AND f.is_billable AS is_due,
+    f.billing_status = 'paid' AS is_paid,
+    f.billing_status IN ('paid', 'issued') AS is_issued
+  FROM `{project}.{memory}.client_finance_monthly` AS f
+  LEFT JOIN `{project}.{memory}.client_registry` AS c
+    ON f.client_slug = c.client_slug
+),
+client_rollup AS (
+  SELECT
+    client_slug,
+    SUM(IF(is_due, retainer_amount_aud, 0)) AS due_amount_aud,
+    SUM(IF(is_due AND is_paid, retainer_amount_aud, 0)) AS paid_due_amount_aud,
+    SUM(IF(is_due AND is_issued, retainer_amount_aud, 0)) AS issued_due_amount_aud,
+    SUM(IF(is_due AND billing_status = 'not_issued', retainer_amount_aud, 0)) AS not_issued_due_amount_aud,
+    SUM(IF(is_billable, retainer_amount_aud, 0)) AS retainer_total_aud,
+    SUM(IF(is_billable, expense_amount_aud, 0)) AS expense_total_aud,
+    SUM(IF(is_billable, net_amount_aud, 0)) AS net_total_aud,
+    COUNTIF(is_billable) AS billable_months,
+    COUNTIF(is_due) AS due_months,
+    COUNTIF(is_due AND billing_status = 'not_issued') AS not_issued_due_months
+  FROM base
+  GROUP BY client_slug
+),
+scored AS (
+  SELECT
+    b.*,
+    r.due_amount_aud,
+    r.paid_due_amount_aud,
+    r.issued_due_amount_aud,
+    r.not_issued_due_amount_aud,
+    r.retainer_total_aud,
+    r.expense_total_aud,
+    r.net_total_aud,
+    r.net_total_aud AS gross_margin_amount_aud,
+    r.billable_months,
+    r.due_months,
+    r.not_issued_due_months,
+    SAFE_DIVIDE(r.paid_due_amount_aud, NULLIF(r.due_amount_aud, 0)) AS collection_rate,
+    SAFE_DIVIDE(r.issued_due_amount_aud, NULLIF(r.due_amount_aud, 0)) AS invoice_coverage_rate,
+    SAFE_DIVIDE(r.expense_total_aud, NULLIF(r.retainer_total_aud, 0)) AS expense_ratio,
+    SAFE_DIVIDE(r.net_total_aud, NULLIF(r.retainer_total_aud, 0)) AS gross_margin_rate
+  FROM base AS b
+  JOIN client_rollup AS r
+    USING (client_slug)
+),
+with_score AS (
+  SELECT
+    *,
+    CAST(ROUND(
+      (IFNULL(collection_rate, 1) * 55)
+      + (IFNULL(invoice_coverage_rate, 1) * 30)
+      + ((1 - LEAST(IFNULL(expense_ratio, 0), 1)) * 15)
+    ) AS INT64) AS finance_score
+  FROM scored
+)
+SELECT
+  *,
+  CASE
+    WHEN finance_score < 45 THEN 'critical'
+    WHEN finance_score < 70 THEN 'needs_attention'
+    WHEN finance_score < 85 THEN 'watch'
+    ELSE 'healthy'
+  END AS finance_status,
+  'agency_memory.client_finance_monthly' AS source_table
+FROM with_score
+"""
+
+
+def build_finance_reporting_mart(runner: CappedBigQueryRunner, config: BigQueryCostConfig) -> dict[str, str]:
+    result, _ = runner.run_query(
+        client_finance_health_sql(config.project_id, config.memory_dataset, config.reporting_dataset),
+        purpose="agency-ops-mart: build client_finance_health",
+    )
+    return {"client_finance_health": result.status}
 
 
 def build_reporting_marts(runner: CappedBigQueryRunner, config: BigQueryCostConfig) -> dict[str, str]:
@@ -3180,6 +3289,7 @@ GROUP BY snapshot_date, client
         "client_roadmap_current": client_roadmap_current_sql(project, memory, reporting),
         "client_roadmap_monthly_completion": client_roadmap_monthly_completion_sql(project, reporting),
         "client_health_check": client_health_check_sql(project, memory, reporting),
+        "client_finance_health": client_finance_health_sql(project, memory, reporting),
     }
     statuses = {}
     for mart_name, sql in queries.items():

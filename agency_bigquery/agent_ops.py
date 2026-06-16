@@ -11,6 +11,7 @@ from typing import Any
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+from .agency_ops_ingestion import has_secret_like_text
 from .agency_ops_ingestion import slugify
 
 
@@ -49,6 +50,15 @@ UNCERTAIN_PROMISE_PATTERNS = [
         r"\bneeds follow[- ]?up\b",
         r"\bwaiting on us\b",
         r"\bshould (review|check|confirm)\b",
+    )
+]
+
+ERROR_SECRET_PATTERNS = [
+    re.compile(pattern, re.IGNORECASE)
+    for pattern in (
+        r"\bbearer\s+[a-z0-9._~+/=-]{12,}",
+        r"\btoken\s*[=:]\s*[a-z0-9._~+/=-]{12,}",
+        r"\bsecret\s*[=:]\s*[a-z0-9._~+/=-]{12,}",
     )
 ]
 
@@ -206,6 +216,127 @@ def mark_agent_run_completed(index_path: Path, active_dir: Path, run_entry: dict
     if marker.exists():
         marker.unlink()
     return index
+
+
+def safe_error_summary(exc: BaseException, *, max_length: int = 300) -> str:
+    message = f"{type(exc).__name__}: {str(exc)}"
+    if has_secret_like_text(message) or any(pattern.search(message) for pattern in ERROR_SECRET_PATTERNS):
+        message = f"{type(exc).__name__}: [redacted]"
+    return message[:max_length]
+
+
+def start_agent_run_lifecycle(
+    *,
+    index_path: Path,
+    active_dir: Path,
+    run_id: str,
+    agent_id: str,
+    agent_name: str,
+    started_at: str,
+    mode: str,
+    dry_run: bool,
+    automation_id: str | None = None,
+    prompt_version: str | None = None,
+    context_id: str | None = None,
+    input_sources: list[str] | None = None,
+    output_path: str | None = None,
+    run_json_path: str | None = None,
+    brief_path: str | None = None,
+) -> dict[str, Any]:
+    entry = agent_run_activity_entry(
+        run_id=run_id,
+        automation_id=automation_id,
+        agent_id=agent_id,
+        agent_name=agent_name,
+        started_at=started_at,
+        status="running",
+        mode=mode,
+        prompt_version=prompt_version,
+        context_id=context_id,
+        input_sources=input_sources,
+        output_path=output_path,
+        run_json_path=run_json_path,
+        brief_path=brief_path,
+        dry_run=dry_run,
+    )
+    mark_agent_run_started(index_path, active_dir, entry)
+    return entry
+
+
+def complete_agent_run_lifecycle(
+    *,
+    index_path: Path,
+    active_dir: Path,
+    run_row: dict[str, Any],
+    output_path: str | None = None,
+    run_json_path: str | None = None,
+    brief_path: str | None = None,
+    bigquery_logged: bool = False,
+) -> dict[str, Any]:
+    entry = agent_run_activity_entry(
+        run_id=str(run_row["run_id"]),
+        automation_id=run_row.get("automation_id"),
+        agent_id=str(run_row["agent_id"]),
+        agent_name=str(run_row.get("agent_name") or run_row["agent_id"]),
+        started_at=str(run_row["started_at"]),
+        completed_at=str(run_row.get("completed_at") or utc_now_iso()),
+        status=str(run_row.get("status") or "succeeded"),
+        mode=str(run_row.get("mode") or "unknown"),
+        prompt_version=run_row.get("prompt_version"),
+        context_id=run_row.get("context_id"),
+        input_sources=run_row.get("input_sources_json") or [],
+        output_path=output_path or run_row.get("output_path"),
+        run_json_path=run_json_path,
+        brief_path=brief_path,
+        findings_count=int(run_row.get("findings_count") or 0),
+        actions_count=int(run_row.get("actions_count") or 0),
+        dry_run=bool(run_row.get("dry_run")),
+        bigquery_logged=bigquery_logged,
+        error_message=run_row.get("error_message"),
+    )
+    mark_agent_run_completed(index_path, active_dir, entry)
+    return entry
+
+
+def fail_agent_run_lifecycle(
+    *,
+    index_path: Path,
+    active_dir: Path,
+    run_id: str,
+    agent_id: str,
+    agent_name: str,
+    started_at: str,
+    mode: str,
+    exc: BaseException,
+    dry_run: bool,
+    automation_id: str | None = None,
+    prompt_version: str | None = None,
+    context_id: str | None = None,
+    input_sources: list[str] | None = None,
+    output_path: str | None = None,
+    run_json_path: str | None = None,
+    brief_path: str | None = None,
+) -> dict[str, Any]:
+    entry = agent_run_activity_entry(
+        run_id=run_id,
+        automation_id=automation_id,
+        agent_id=agent_id,
+        agent_name=agent_name,
+        started_at=started_at,
+        completed_at=utc_now_iso(),
+        status="failed",
+        mode=mode,
+        prompt_version=prompt_version,
+        context_id=context_id,
+        input_sources=input_sources,
+        output_path=output_path,
+        run_json_path=run_json_path,
+        brief_path=brief_path,
+        dry_run=dry_run,
+        error_message=safe_error_summary(exc),
+    )
+    mark_agent_run_completed(index_path, active_dir, entry)
+    return entry
 
 
 def load_active_agent_markers(active_dir: Path) -> list[dict[str, Any]]:
@@ -692,6 +823,7 @@ def promise_tracker_output(
     findings: list[dict[str, Any]] = []
     actions: list[dict[str, Any]] = []
     considered = comms_rows[:limit] if limit else comms_rows
+    seen_promise_keys: set[tuple[str, str, str, str]] = set()
 
     for row in considered:
         is_promise, review_status, confidence = looks_like_promise(row)
@@ -702,13 +834,18 @@ def promise_tracker_output(
             continue
         summary = str(row.get("summary") or row.get("recommended_action") or "").strip()
         recommended = str(row.get("recommended_action") or "Review this commitment and confirm the next action.").strip()
+        thread_ref = str(row.get("thread_ref_hash") or row.get("effective_thread_ref_hash") or "").strip()
+        promise_key = (client_slug, thread_ref, stable_hash(summary), stable_hash(recommended))
+        if promise_key in seen_promise_keys:
+            continue
+        seen_promise_keys.add(promise_key)
         evidence = [
             {
                 "source": row.get("source_table") or row.get("source") or "summarized_comms",
                 "client_slug": client_slug,
                 "week_start": row.get("week_start"),
                 "week_end": row.get("week_end"),
-                "thread_ref_hash": row.get("thread_ref_hash") or row.get("effective_thread_ref_hash"),
+                "thread_ref_hash": thread_ref or None,
                 "summary": summary[:360],
             }
         ]

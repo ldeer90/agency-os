@@ -360,6 +360,45 @@ CLIENT_MONTHLY_API_SNAPSHOTS_SCHEMA: list[SchemaTuple] = [
 ]
 
 
+CLIENT_FINANCE_MONTHLY_SCHEMA: list[SchemaTuple] = [
+    ("ingested_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("source_id", "STRING", "REQUIRED"),
+    ("source_path", "STRING", "REQUIRED"),
+    ("period_id", "STRING", "REQUIRED"),
+    ("month_start", "DATE", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_label", "STRING", "REQUIRED"),
+    ("billing_status", "STRING", "REQUIRED"),
+    ("retainer_amount_aud", "FLOAT64", "REQUIRED"),
+    ("expense_amount_aud", "FLOAT64", "REQUIRED"),
+    ("net_amount_aud", "FLOAT64", "REQUIRED"),
+    ("is_billable", "BOOL", "REQUIRED"),
+    ("is_due", "BOOL", "REQUIRED"),
+    ("is_paid", "BOOL", "REQUIRED"),
+    ("is_issued", "BOOL", "REQUIRED"),
+    ("notes", "STRING", "NULLABLE"),
+]
+
+
+AGENCY_EXPENSES_MONTHLY_SCHEMA: list[SchemaTuple] = [
+    ("ingested_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("source_id", "STRING", "REQUIRED"),
+    ("source_path", "STRING", "REQUIRED"),
+    ("period_id", "STRING", "REQUIRED"),
+    ("month_start", "DATE", "REQUIRED"),
+    ("expense_item_id", "STRING", "REQUIRED"),
+    ("expense_name", "STRING", "REQUIRED"),
+    ("cost_per_month_aud", "FLOAT64", "REQUIRED"),
+    ("start_date", "DATE", "NULLABLE"),
+    ("renewal_date", "DATE", "NULLABLE"),
+    ("invoicing_schedule_date", "DATE", "NULLABLE"),
+    ("invoice_agreement", "STRING", "NULLABLE"),
+    ("is_active", "BOOL", "REQUIRED"),
+]
+
+
 CLIENT_COMMS_DIGEST_RUNS_SCHEMA: list[SchemaTuple] = [
     ("run_id", "STRING", "REQUIRED"),
     ("created_at", "TIMESTAMP", "REQUIRED"),
@@ -988,6 +1027,8 @@ REPORTING_CLIENT_HEALTH_CHECK_SCHEMA = [
     ("has_sidecar_json", "BOOL", "REQUIRED"),
     ("has_client_brief", "BOOL", "REQUIRED"),
     ("has_timeline", "BOOL", "REQUIRED"),
+    ("has_writing_style", "BOOL", "REQUIRED"),
+    ("has_brand_writing_guide_doc", "BOOL", "REQUIRED"),
     ("has_drive_root", "BOOL", "REQUIRED"),
     ("has_drive_root_verified", "BOOL", "REQUIRED"),
     ("has_roadmap_route", "BOOL", "REQUIRED"),
@@ -1010,6 +1051,41 @@ REPORTING_CLIENT_HEALTH_CHECK_SCHEMA = [
     ("has_monthly_report_snapshot", "BOOL", "REQUIRED"),
     ("has_roadmap_items", "BOOL", "REQUIRED"),
     ("latest_report_month", "DATE", "NULLABLE"),
+]
+
+
+REPORTING_CLIENT_FINANCE_HEALTH_SCHEMA = [
+    ("period_id", "STRING", "REQUIRED"),
+    ("month_start", "DATE", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("client_label", "STRING", "REQUIRED"),
+    ("billing_status", "STRING", "REQUIRED"),
+    ("retainer_amount_aud", "FLOAT64", "REQUIRED"),
+    ("expense_amount_aud", "FLOAT64", "REQUIRED"),
+    ("net_amount_aud", "FLOAT64", "REQUIRED"),
+    ("is_billable", "BOOL", "REQUIRED"),
+    ("is_due", "BOOL", "REQUIRED"),
+    ("is_paid", "BOOL", "REQUIRED"),
+    ("is_issued", "BOOL", "REQUIRED"),
+    ("due_amount_aud", "FLOAT64", "REQUIRED"),
+    ("paid_due_amount_aud", "FLOAT64", "REQUIRED"),
+    ("issued_due_amount_aud", "FLOAT64", "REQUIRED"),
+    ("not_issued_due_amount_aud", "FLOAT64", "REQUIRED"),
+    ("retainer_total_aud", "FLOAT64", "REQUIRED"),
+    ("expense_total_aud", "FLOAT64", "REQUIRED"),
+    ("net_total_aud", "FLOAT64", "REQUIRED"),
+    ("gross_margin_amount_aud", "FLOAT64", "REQUIRED"),
+    ("billable_months", "INT64", "REQUIRED"),
+    ("due_months", "INT64", "REQUIRED"),
+    ("not_issued_due_months", "INT64", "REQUIRED"),
+    ("collection_rate", "FLOAT64", "NULLABLE"),
+    ("invoice_coverage_rate", "FLOAT64", "NULLABLE"),
+    ("expense_ratio", "FLOAT64", "NULLABLE"),
+    ("gross_margin_rate", "FLOAT64", "NULLABLE"),
+    ("finance_score", "INT64", "REQUIRED"),
+    ("finance_status", "STRING", "REQUIRED"),
+    ("source_table", "STRING", "REQUIRED"),
 ]
 
 
@@ -1383,6 +1459,20 @@ def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
         ),
         TableSpec(
             config.memory_dataset,
+            "client_finance_monthly",
+            CLIENT_FINANCE_MONTHLY_SCHEMA,
+            partition_field="month_start",
+            cluster_fields=("client_slug", "billing_status"),
+        ),
+        TableSpec(
+            config.memory_dataset,
+            "agency_expenses_monthly",
+            AGENCY_EXPENSES_MONTHLY_SCHEMA,
+            partition_field="month_start",
+            cluster_fields=("expense_name", "is_active"),
+        ),
+        TableSpec(
+            config.memory_dataset,
             "client_comms_digest_runs",
             CLIENT_COMMS_DIGEST_RUNS_SCHEMA,
             partition_field="week_start",
@@ -1522,6 +1612,13 @@ def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
         ),
         TableSpec(
             config.reporting_dataset,
+            "client_finance_health",
+            REPORTING_CLIENT_FINANCE_HEALTH_SCHEMA,
+            partition_field="month_start",
+            cluster_fields=("client_slug", "finance_status"),
+        ),
+        TableSpec(
+            config.reporting_dataset,
             "client_crawl_latest",
             REPORTING_CLIENT_CRAWL_LATEST_SCHEMA,
             partition_field="crawl_date",
@@ -1655,6 +1752,37 @@ def ensure_roadmap_memory_tables(client: Any, config: BigQueryCostConfig) -> Non
                 REPORTING_CLIENT_ROADMAP_MONTHLY_COMPLETION_SCHEMA,
                 partition_field="planned_month",
                 cluster_fields=("client_slug", "status_summary"),
+            ),
+        ],
+    )
+
+
+def ensure_finance_memory_tables(client: Any, config: BigQueryCostConfig) -> None:
+    """Create the local finance memory and reporting tables."""
+    ensure_tables(
+        client,
+        config,
+        [
+            TableSpec(
+                config.memory_dataset,
+                "client_finance_monthly",
+                CLIENT_FINANCE_MONTHLY_SCHEMA,
+                partition_field="month_start",
+                cluster_fields=("client_slug", "billing_status"),
+            ),
+            TableSpec(
+                config.memory_dataset,
+                "agency_expenses_monthly",
+                AGENCY_EXPENSES_MONTHLY_SCHEMA,
+                partition_field="month_start",
+                cluster_fields=("expense_name", "is_active"),
+            ),
+            TableSpec(
+                config.reporting_dataset,
+                "client_finance_health",
+                REPORTING_CLIENT_FINANCE_HEALTH_SCHEMA,
+                partition_field="month_start",
+                cluster_fields=("client_slug", "finance_status"),
             ),
         ],
     )

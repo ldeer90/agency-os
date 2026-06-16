@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 from typing import Any
@@ -70,6 +71,42 @@ SPECIALIST_AGENT_CONFIGS: dict[str, SpecialistAgentConfig] = {
             "agency_memory.seo_client_memory_summaries",
             "agency_reporting.client_health_check",
             "agency_memory.seo_workflow_catalog",
+        ),
+    ),
+    "content_research_agent": SpecialistAgentConfig(
+        agent_id="content_research_agent",
+        agent_name="Content Research Agent",
+        prompt_version="content_research_agent/v001",
+        task_type="content_research_readiness_review",
+        source_tables=(
+            "agency_memory.seo_client_memory_summaries",
+            "agency_memory.seo_workflow_catalog",
+            "SEO Automation docs/agent/workflows/collection-content-briefs.md",
+        ),
+    ),
+    "content_writer_agent": SpecialistAgentConfig(
+        agent_id="content_writer_agent",
+        agent_name="Content Writer Agent",
+        prompt_version="content_writer_agent/v001",
+        task_type="content_writer_readiness_review",
+        source_tables=(
+            "agency_memory.seo_client_memory_summaries",
+            "local content research packs",
+            "SEO Automation final content writing workflows",
+        ),
+    ),
+    "system_admin_agent": SpecialistAgentConfig(
+        agent_id="system_admin_agent",
+        agent_name="System Admin Agent",
+        prompt_version="system_admin_agent/v001",
+        task_type="agencyos_system_admin_sweep",
+        source_tables=(
+            "config/bigquery_cost_guardrails.json",
+            "data/agent_runs/index.json",
+            "data/agent_runs/active/*.json",
+            "agency_control.ingestion_runs",
+            "agency_control.cost_checks",
+            "agency_reporting.client_health_check",
         ),
     ),
 }
@@ -154,6 +191,32 @@ def _append_finding_action(
     )
     findings.append(finding)
     actions.append(action)
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _is_stale(value: Any, *, created_at: str, max_age_hours: int) -> bool:
+    observed = _parse_datetime(value)
+    current = _parse_datetime(created_at)
+    if not observed or not current:
+        return True
+    if observed.tzinfo is None and current.tzinfo is not None:
+        observed = observed.replace(tzinfo=current.tzinfo)
+    if current.tzinfo is None and observed.tzinfo is not None:
+        current = current.replace(tzinfo=observed.tzinfo)
+    return current - observed > timedelta(hours=max_age_hours)
 
 
 def performance_analyst_output(rows: list[dict[str, Any]], *, run_id: str, created_at: str) -> dict[str, Any]:
@@ -479,6 +542,303 @@ def technical_audit_output(rows: list[dict[str, Any]], *, run_id: str, created_a
     )
 
 
+def _json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if not value:
+        return {}
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
+def _has_nested_key(value: Any, *keys: str) -> bool:
+    current: Any = _json_object(value)
+    for key in keys:
+        if not isinstance(current, dict) or key not in current:
+            return False
+        current = current[key]
+    return current not in (None, "", [], {})
+
+
+def content_research_output(rows: list[dict[str, Any]], *, run_id: str, created_at: str) -> dict[str, Any]:
+    findings: list[dict[str, Any]] = []
+    actions: list[dict[str, Any]] = []
+    for row in rows:
+        client = _client_name(row)
+        if not row.get("domain"):
+            continue
+        blockers: list[str] = []
+        warnings: list[str] = []
+        if not row.get("sidecar_present"):
+            blockers.append("client sidecar JSON")
+        if not row.get("brief_present"):
+            blockers.append("client Markdown brief")
+        if not row.get("timeline_present"):
+            blockers.append("client timeline")
+        if not row.get("has_se_ranking"):
+            blockers.append("SE Ranking route")
+        if not row.get("has_search_console_route"):
+            warnings.append("Search Console route/opportunity source")
+        if not row.get("has_drive_root"):
+            blockers.append("Drive route for eventual content brief filing")
+        if not row.get("has_monday_route"):
+            warnings.append("Monday route for eventual task creation")
+        collection_count = row.get("collection_count")
+        if not isinstance(collection_count, int):
+            try:
+                collection_count = int(collection_count or 0)
+            except (TypeError, ValueError):
+                collection_count = 0
+        if collection_count <= 0:
+            blockers.append("SEO-priority collection set")
+        deliverables = _json_object(row.get("deliverables_json"))
+        if not _has_nested_key(deliverables, "competitor_serp_json"):
+            warnings.append("fresh structured SERP JSON")
+        if not _has_nested_key(deliverables, "collection_content_briefs"):
+            warnings.append("existing collection brief coverage/readback")
+        evidence = _evidence(
+            row,
+            row.get("source_table") or "agency_memory.seo_client_memory_summaries",
+            {
+                "workflow_route": "SEO Automation ld-seo-collection-seo -> ld-seo-content-briefs",
+                "preferred_doc_format": [
+                    "Overview table",
+                    "Keywords To Work Into The Page table",
+                    "Internal Links table",
+                    "Recommended Heading Hierarchy table",
+                    "SEO Review table",
+                    "Example Copy or Article Requirements section",
+                ],
+                "collection_count": collection_count,
+                "blockers": blockers,
+                "warnings": warnings,
+            },
+        )
+        if blockers:
+            _append_finding_action(
+                findings=findings,
+                actions=actions,
+                run_id=run_id,
+                agent_id="content_research_agent",
+                created_at=created_at,
+                row=row,
+                finding_type="content_research_readiness_blocker",
+                severity="high",
+                summary=f"{client} is not ready for client-facing content research/brief generation: {', '.join(blockers)}.",
+                recommended_action=(
+                    "Route setup gaps through SEO Automation maintenance/onboarding first. "
+                    "Do not create Google Docs, Monday tasks, live Shopify updates, or SE Ranking changes until the client sidecar, collection state, and required evidence validate. "
+                    "Local HTML previews may be drafted only after validation and lead-agent sense-check."
+                ),
+                evidence=evidence,
+                priority="high",
+                confidence_score=0.86,
+            )
+            continue
+        _append_finding_action(
+            findings=findings,
+            actions=actions,
+            run_id=run_id,
+            agent_id="content_research_agent",
+            created_at=created_at,
+            row=row,
+            finding_type="content_research_workflow_ready",
+            severity="info" if not warnings else "medium",
+            summary=f"{client} can be routed into the SEO Automation content research pipeline with {collection_count} collection page(s) in scope.",
+            recommended_action=(
+                "Run `ld-seo-collection-seo` for keyword research, SERP review, product/page grounding, and metadata opportunities; "
+                "then run `ld-seo-content-briefs` only after collection SEO validation passes. "
+                "Draft local HTML brief previews first; for final content writing, hand off to `content_writer_agent` so the final HTML is written into the same local research pack/files. "
+                "Send local HTML outputs to `agency_supervisor` for sense-check, then ask Laurence for approval. "
+                "Only after approval should the Google Doc be created in the approved content folder using the Salad Servers table-led format with native Google Docs tables. "
+                "After Doc creation/readback, ask Laurence whether to update or create the related Monday task."
+            ),
+            evidence=evidence,
+            priority="medium" if warnings else "low",
+            confidence_score=0.8,
+        )
+    return validate_agent_output(
+        {
+            "run_id": run_id,
+            "agent_id": "content_research_agent",
+            "created_at": created_at,
+            "summary": f"Reviewed {len(rows)} content research readiness row(s).",
+            "findings": findings,
+            "actions": actions,
+            "metrics": {"rows_reviewed": len(rows), "findings": len(findings), "actions": len(actions)},
+        }
+    )
+
+
+def content_writer_output(rows: list[dict[str, Any]], *, run_id: str, created_at: str) -> dict[str, Any]:
+    findings: list[dict[str, Any]] = []
+    actions: list[dict[str, Any]] = []
+    for row in rows:
+        client = _client_name(row)
+        if not row.get("domain"):
+            continue
+        blockers: list[str] = []
+        warnings: list[str] = []
+        if not row.get("sidecar_present"):
+            blockers.append("client sidecar JSON")
+        if not row.get("brief_present"):
+            blockers.append("client Markdown brief")
+        if not row.get("timeline_present"):
+            warnings.append("client timeline")
+        if not row.get("has_se_ranking"):
+            warnings.append("SE Ranking route/volume evidence")
+        if not row.get("has_search_console_route"):
+            warnings.append("Search Console route/opportunity evidence")
+        collection_count = row.get("collection_count")
+        try:
+            collection_count_int = int(collection_count or 0)
+        except (TypeError, ValueError):
+            collection_count_int = 0
+        if collection_count_int <= 0:
+            blockers.append("approved research/brief target pages")
+        evidence = _evidence(
+            row,
+            row.get("source_table") or "agency_memory.seo_client_memory_summaries",
+            {
+                "writer_flow": [
+                    "read approved research/brief inputs from the local research pack",
+                    "write final content HTML into the same local pack/file set",
+                    "run the matching SEO Automation validator",
+                    "send draft to agency_supervisor for sense-check",
+                    "ask Laurence for approval before Google Doc, Monday, Shopify, or publishing writes",
+                ],
+                "blockers": blockers,
+                "warnings": warnings,
+            },
+        )
+        if blockers:
+            _append_finding_action(
+                findings=findings,
+                actions=actions,
+                run_id=run_id,
+                agent_id="content_writer_agent",
+                created_at=created_at,
+                row=row,
+                finding_type="content_writer_readiness_blocker",
+                severity="high",
+                summary=f"{client} is not ready for final local HTML writing: {', '.join(blockers)}.",
+                recommended_action=(
+                    "Complete the content research/brief pack first. The writer may only draft final content HTML into the same local research files after approved inputs exist."
+                ),
+                evidence=evidence,
+                priority="high",
+                confidence_score=0.84,
+            )
+            continue
+        _append_finding_action(
+            findings=findings,
+            actions=actions,
+            run_id=run_id,
+            agent_id="content_writer_agent",
+            created_at=created_at,
+            row=row,
+            finding_type="content_writer_workflow_ready",
+            severity="medium" if warnings else "info",
+            summary=f"{client} can be routed to local final-content HTML drafting once the approved research/brief pack is selected.",
+            recommended_action=(
+                "Use the matching SEO Automation writing workflow (`ld-seo-shopify-collection-writing`, `ld-seo-shopify-blog-writing`, or `ld-seo-content-writing`) "
+                "to write final content HTML into the same local research pack/files as the brief. Validate the HTML, send it to `agency_supervisor` for sense-check, "
+                "then ask Laurence for approval before creating the Google Doc or making any Monday/Shopify/publishing changes."
+            ),
+            evidence=evidence,
+            priority="medium" if warnings else "low",
+            confidence_score=0.8,
+        )
+    return validate_agent_output(
+        {
+            "run_id": run_id,
+            "agent_id": "content_writer_agent",
+            "created_at": created_at,
+            "summary": f"Reviewed {len(rows)} content writer readiness row(s).",
+            "findings": findings,
+            "actions": actions,
+            "metrics": {"rows_reviewed": len(rows), "findings": len(findings), "actions": len(actions)},
+        }
+    )
+
+
+def system_admin_output(rows: list[dict[str, Any]], *, run_id: str, created_at: str) -> dict[str, Any]:
+    findings: list[dict[str, Any]] = []
+    actions: list[dict[str, Any]] = []
+    metrics = {
+        "rows_reviewed": len(rows),
+        "checks_ok": 0,
+        "checks_warn": 0,
+        "checks_failed": 0,
+        "route_verification_gaps": 0,
+    }
+    for row in rows:
+        category = str(row.get("check_category") or "system").strip()
+        status = str(row.get("check_status") or "ok").strip().lower()
+        client_slug = row.get("client_slug") or "agency-system"
+        evidence_source = row.get("source_table") or row.get("source") or category
+        evidence = [
+            {
+                "source": evidence_source,
+                "client_slug": client_slug,
+                "check_category": category,
+                "check_name": row.get("check_name"),
+                "check_status": status,
+                "observed_at": row.get("observed_at"),
+                "source_ref_hash": row.get("source_ref_hash"),
+                "details": row.get("details"),
+            }
+        ]
+
+        if status in {"ok", "healthy", "present"}:
+            metrics["checks_ok"] += 1
+            continue
+        if status in {"warn", "warning", "stale", "unknown"}:
+            metrics["checks_warn"] += 1
+        else:
+            metrics["checks_failed"] += 1
+
+        finding_type = str(row.get("finding_type") or f"system_admin_{category}_gap").strip().lower()
+        severity = str(row.get("severity") or ("high" if status in {"failed", "missing", "over_cap"} else "medium")).strip().lower()
+        if finding_type == "route_verification_gap":
+            metrics["route_verification_gaps"] += 1
+            severity = "medium"
+        recommended_action = str(row.get("recommended_action") or "Review the system-admin finding and decide whether a follow-up workflow is needed.").strip()
+        _append_finding_action(
+            findings=findings,
+            actions=actions,
+            run_id=run_id,
+            agent_id="system_admin_agent",
+            created_at=created_at,
+            row={**row, "client_slug": client_slug},
+            finding_type=finding_type,
+            severity=severity,
+            summary=str(row.get("summary") or f"{category} check needs review: {row.get('check_name') or status}.").strip(),
+            recommended_action=recommended_action,
+            evidence=evidence,
+            priority=str(row.get("priority") or ("high" if severity in {"critical", "high"} else "medium")).strip().lower(),
+            target_system=str(row.get("target_system") or "codex").strip().lower(),
+            confidence_score=float(row.get("confidence_score") if row.get("confidence_score") is not None else 0.78),
+        )
+
+    return validate_agent_output(
+        {
+            "run_id": run_id,
+            "agent_id": "system_admin_agent",
+            "created_at": created_at,
+            "summary": f"Reviewed {len(rows)} AgencyOS system admin check row(s) and found {len(findings)} item(s) needing review.",
+            "findings": findings,
+            "actions": actions,
+            "metrics": {**metrics, "findings": len(findings), "actions": len(actions)},
+        }
+    )
+
+
 def local_client_rows(
     *,
     run_id: str,
@@ -503,6 +863,12 @@ def output_for_agent(agent_id: str, rows: list[dict[str, Any]], *, run_id: str, 
         return reporting_portal_qa_output(rows, run_id=run_id, created_at=created_at)
     if agent_id == "technical_audit_agent":
         return technical_audit_output(rows, run_id=run_id, created_at=created_at)
+    if agent_id == "content_research_agent":
+        return content_research_output(rows, run_id=run_id, created_at=created_at)
+    if agent_id == "content_writer_agent":
+        return content_writer_output(rows, run_id=run_id, created_at=created_at)
+    if agent_id == "system_admin_agent":
+        return system_admin_output(rows, run_id=run_id, created_at=created_at)
     raise ValueError(f"unsupported specialist agent: {agent_id}")
 
 
