@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Melani Merchant Center and Organic Search Audit</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5c6673;
+      --line: #d9dde5;
+      --soft: #f5f7fa;
+      --panel: #ffffff;
+      --blue: #1a5fb4;
+      --red: #b42318;
+      --amber: #8a5a00;
+      --green: #146c43;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #ffffff;
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+    main {
+      max-width: 1180px;
+      min-height: 100vh;
+      margin: 0 auto;
+      background: var(--panel);
+    }
+    header {
+      padding: 44px 52px 32px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+    section {
+      padding: 34px 52px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+    h1 {
+      max-width: 850px;
+      font-size: 34px;
+      font-weight: 760;
+    }
+    h2 {
+      margin-bottom: 18px;
+      font-size: 24px;
+    }
+    h3 {
+      margin: 0 0 10px;
+      font-size: 17px;
+    }
+    p {
+      margin: 0 0 12px;
+      color: var(--muted);
+    }
+    a { color: var(--blue); }
+    .eyebrow {
+      margin-bottom: 12px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .lede {
+      max-width: 860px;
+      margin-top: 14px;
+      font-size: 17px;
+      color: #354150;
+    }
+    .small {
+      font-size: 12px;
+      color: #687483;
+    }
+    .grid {
+      display: grid;
+      gap: 14px;
+      margin: 18px 0;
+    }
+    .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .panel {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+    .kpi .label {
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .kpi .value {
+      margin-bottom: 6px;
+      font-size: 28px;
+      font-weight: 760;
+      color: var(--ink);
+    }
+    .kpi .sub {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .callout {
+      margin: 14px 0;
+      padding: 14px 16px;
+      border-left: 4px solid var(--blue);
+      background: #f4f8ff;
+    }
+    .callout.warn {
+      border-left-color: var(--amber);
+      background: #fff8ea;
+    }
+    .callout.good {
+      border-left-color: var(--green);
+      background: #f0fbf5;
+    }
+    table {
+      width: 100%;
+      margin: 14px 0 20px;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: #ffffff;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: var(--soft);
+      color: #2f3947;
+      font-size: 12px;
+      font-weight: 760;
+    }
+    td { color: #24303d; }
+    .num {
+      text-align: right;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .badge {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+    .evidence { color: #0f4c81; background: #e8f2ff; }
+    .inference { color: #6b4500; background: #fff0c7; }
+    .recommendation { color: #0f5c37; background: #daf7e7; }
+    ul {
+      margin: 8px 0 16px;
+      padding-left: 22px;
+      color: var(--muted);
+    }
+    li { margin: 5px 0; }
+    @media (max-width: 760px) {
+      header, section { padding: 28px 20px; }
+      h1 { font-size: 28px; }
+      .cols-2, .cols-3 { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Client audit - Merchant Center, Google Shopping, Organic Search</div>
+    <h1>Melani Label: Organic Visibility and Product Feed Audit</h1>
+    <p class="lede">This audit reviews when Melani's organic decline began, what changed across Merchant Center and Organic Search, and which fixes are most likely to improve traffic quality, click-through rate, and product discovery.</p>
+    <p class="small">Prepared: 19 June 2026. External systems reviewed read-only. No Merchant Center, Shopify, feed-rule, API, or product-data changes made.</p>
+  </header>
+
+  <section>
+    <h2>Executive Summary</h2>
+    <div class="grid cols-3">
+      <div class="panel kpi">
+        <div class="label">First major break</div>
+        <div class="value">June 2025</div>
+        <div class="sub">Organic revenue fell from A$163k in May 2025 to A$70k in June 2025.</div>
+      </div>
+      <div class="panel kpi">
+        <div class="label">Current Shopping issue</div>
+        <div class="value">0.62%</div>
+        <div class="sub">Organic Merchant Center CTR in Mar-May 2026, down from 1.64% in Mar-May 2025.</div>
+      </div>
+      <div class="panel kpi">
+        <div class="label">Confirmed feed issue</div>
+        <div class="value">3,083</div>
+        <div class="sub">Current product rows use the generic "Women's Formal Dresses & Resort Wear" title suffix.</div>
+      </div>
+    </div>
+    <div class="callout">
+      <p><span class="badge evidence">Evidence</span>The decline is not just a recent 2026 issue. GA4 shows the first clear organic revenue break in June 2025, followed by a second weakening through September-November 2025.</p>
+      <p><span class="badge inference">Inference</span>Merchant Center evidence points to two phases: an early visibility and attribution/conversion break after Mar-May 2025, then a later click-through and title-quality problem that persists into 2026.</p>
+      <p><span class="badge recommendation">Recommendation</span>Treat this as a combined recovery project: fix product feed/title quality, review tracking attribution around late May 2025, and continue collection-page SEO recovery for Dresses, All Dresses, Maxis, Sets, Gowns, and New Arrivals.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>1. Timeline Deep Dive: What Dropped, When, And What It Means</h2>
+    <p><span class="badge evidence">Evidence</span>GA4 is used as the revenue and purchase source of truth. Merchant Center Day exports are used for product impressions, clicks, and CTR. Title exports are used only for title-pattern distribution.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th class="num">GA4 sessions</th>
+          <th class="num">GA4 purchases</th>
+          <th class="num">GA4 revenue</th>
+          <th class="num">MC Organic impressions</th>
+          <th class="num">MC Organic clicks</th>
+          <th class="num">MC CTR</th>
+          <th>Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Mar-May 2025 peak baseline</td><td class="num">1,010,647</td><td class="num">9,494</td><td class="num">A$2,352,163</td><td class="num">275,281</td><td class="num">4,524</td><td class="num">1.64%</td><td>High organic revenue and healthy Shopping CTR.</td></tr>
+        <tr><td>Jun-Aug 2025 first drop</td><td class="num">964,523</td><td class="num">6,758</td><td class="num">A$1,647,928</td><td class="num">144,862</td><td class="num">2,713</td><td class="num">1.87%</td><td>Revenue, purchases, and product visibility fell. CTR did not collapse.</td></tr>
+        <tr><td>Sep-Nov 2025 CTR/title break</td><td class="num">774,436</td><td class="num">4,103</td><td class="num">A$1,042,579</td><td class="num">193,708</td><td class="num">1,929</td><td class="num">1.00%</td><td>Impressions rebuilt, but clicks and CTR weakened.</td></tr>
+        <tr><td>Dec 2025-Feb 2026 bridge</td><td class="num">565,706</td><td class="num">3,027</td><td class="num">A$879,380</td><td class="num">189,355</td><td class="num">1,715</td><td class="num">0.91%</td><td>Weak CTR persisted while impressions rebuilt.</td></tr>
+        <tr><td>Mar-May 2026 current state</td><td class="num">883,930</td><td class="num">3,185</td><td class="num">A$1,054,827</td><td class="num">360,021</td><td class="num">2,237</td><td class="num">0.62%</td><td>Impressions are high, but clicks lag badly.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <p><span class="badge inference">Inference</span>June 2025 should not be framed as a Merchant Center CTR collapse. The CTR problem starts later: it weakens in August 2025, breaks under 1% in October 2025, remains weak through Jan 2026 at 0.92%, and deteriorates further in Mar-May 2026.</p>
+    </div>
+    <h3>Organic revenue timeline</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="num">Organic Search revenue</th>
+          <th class="num">Organic Shopping revenue</th>
+          <th class="num">Total organic revenue</th>
+          <th>Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Mar 2025</td><td class="num">A$148,772</td><td class="num">A$34,341</td><td class="num">A$183,113</td><td>Peak period begins.</td></tr>
+        <tr><td>Apr 2025</td><td class="num">A$188,252</td><td class="num">A$22,198</td><td class="num">A$210,451</td><td>Strongest month observed.</td></tr>
+        <tr><td>May 2025</td><td class="num">A$154,911</td><td class="num">A$8,531</td><td class="num">A$163,442</td><td>Still strong.</td></tr>
+        <tr><td>Jun 2025</td><td class="num">A$66,181</td><td class="num">A$4,101</td><td class="num">A$70,281</td><td>First major break.</td></tr>
+        <tr><td>Aug 2025</td><td class="num">A$49,210</td><td class="num">A$3,764</td><td class="num">A$52,974</td><td>Lower level persists.</td></tr>
+        <tr><td>Nov 2025</td><td class="num">A$22,208</td><td class="num">A$2,434</td><td class="num">A$24,642</td><td>Second weakening visible.</td></tr>
+        <tr><td>Jan 2026</td><td class="num">A$15,991</td><td class="num">A$3,874</td><td class="num">A$19,865</td><td>Bridge period remains weak.</td></tr>
+        <tr><td>May 2026</td><td class="num">A$38,749</td><td class="num">A$3,132</td><td class="num">A$41,881</td><td>Not recovered to early-2025 levels.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>2. May-June 2025 Break And Revenue Overlay</h2>
+    <p><span class="badge evidence">Evidence</span>To test whether the June 2025 organic decline was true commercial loss or mainly attribution shift, all GA4 channel revenue was overlaid for May and June 2025.</p>
+    <div class="grid cols-3">
+      <div class="panel kpi">
+        <div class="label">Total revenue change</div>
+        <div class="value">-18.1%</div>
+        <div class="sub">A$663,048 in May, A$542,927 in June.</div>
+      </div>
+      <div class="panel kpi">
+        <div class="label">Organic revenue change</div>
+        <div class="value">-57.0%</div>
+        <div class="sub">Organic Search + Organic Shopping fell by A$93,161.</div>
+      </div>
+      <div class="panel kpi">
+        <div class="label">Unassigned movement</div>
+        <div class="value">+178.3%</div>
+        <div class="sub">Unassigned revenue increased by A$131,759.</div>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Channel group</th>
+          <th class="num">May 2025 revenue</th>
+          <th class="num">June 2025 revenue</th>
+          <th class="num">Change</th>
+          <th>Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Total GA4 revenue</td><td class="num">A$663,048</td><td class="num">A$542,927</td><td class="num">-A$120,121 / -18.1%</td><td>Revenue did not vanish, but there was real top-line decline.</td></tr>
+        <tr><td>Organic Search + Organic Shopping</td><td class="num">A$163,442</td><td class="num">A$70,281</td><td class="num">-A$93,161 / -57.0%</td><td>Organic channel revenue fell much faster than total revenue.</td></tr>
+        <tr><td>Unassigned</td><td class="num">A$73,893</td><td class="num">A$205,652</td><td class="num">+A$131,759 / +178.3%</td><td>Large channel classification movement.</td></tr>
+        <tr><td>Direct</td><td class="num">A$179,897</td><td class="num">A$157,638</td><td class="num">-A$22,259 / -12.4%</td><td>Direct fell but did not absorb the organic loss.</td></tr>
+        <tr><td>Cross-network</td><td class="num">A$89,811</td><td class="num">A$25,869</td><td class="num">-A$63,942 / -71.2%</td><td>Paid Google campaign revenue fell sharply too.</td></tr>
+      </tbody>
+    </table>
+    <h3>Clicks, sessions, purchases, conversion rate</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th class="num">May 2025</th>
+          <th class="num">June 2025</th>
+          <th class="num">Change</th>
+          <th>Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Total GA4 sessions</td><td class="num">290,841</td><td class="num">326,235</td><td class="num">+12.2%</td><td>Total traffic increased.</td></tr>
+        <tr><td>Total GA4 users</td><td class="num">206,177</td><td class="num">257,033</td><td class="num">+24.7%</td><td>Audience volume increased.</td></tr>
+        <tr><td>Total engaged sessions</td><td class="num">161,540</td><td class="num">69,745</td><td class="num">-56.8%</td><td>Engagement quality fell sharply.</td></tr>
+        <tr><td>Total purchases</td><td class="num">2,811</td><td class="num">2,333</td><td class="num">-17.0%</td><td>Orders fell despite higher traffic.</td></tr>
+        <tr><td>Total conversion rate</td><td class="num">0.97%</td><td class="num">0.72%</td><td class="num">-25.4%</td><td>Commercial efficiency weakened.</td></tr>
+        <tr><td>Merchant Center Organic impressions</td><td class="num">75,382</td><td class="num">39,636</td><td class="num">-47.4%</td><td>Product visibility fell.</td></tr>
+        <tr><td>Merchant Center Organic clicks</td><td class="num">1,142</td><td class="num">967</td><td class="num">-15.3%</td><td>Clicks fell, but much less than impressions.</td></tr>
+        <tr><td>Merchant Center Organic CTR</td><td class="num">1.51%</td><td class="num">2.44%</td><td class="num">+61.0%</td><td>Click appeal was not the June problem.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <p><span class="badge inference">Inference</span>June 2025 appears to combine three issues: attribution moved heavily into Unassigned, total site conversion quality weakened, and Merchant Center product visibility dropped. It does not look like the point where Google Shopping CTR failed.</p>
+    </div>
+    <div class="callout">
+      <p><span class="badge recommendation">Recommendation</span>Before presenting June 2025 as purely SEO loss, check late-May 2025 changes to GA4 tagging, Shopify checkout attribution, consent/tracking behaviour, UTMs, Google Ads auto-tagging, Meta/Instagram tagging, Klaviyo attribution, and any Shopify app/theme changes.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Merchant Center Organic Performance</h2>
+    <p><span class="badge evidence">Evidence</span>Merchant Center Organic Day exports were analysed across five audit windows: peak baseline, first drop, CTR/title break, bridge period, and current state.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Date range</th>
+          <th>Export</th>
+          <th class="num">Impressions</th>
+          <th class="num">Clicks</th>
+          <th class="num">CTR</th>
+          <th>Interpretation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Mar 1-May 31, 2025</td><td>Organic Day</td><td class="num">275,281</td><td class="num">4,524</td><td class="num">1.64%</td><td>Strong baseline.</td></tr>
+        <tr><td>Jun 1-Aug 31, 2025</td><td>Organic Day</td><td class="num">144,862</td><td class="num">2,713</td><td class="num">1.87%</td><td>Visibility and clicks fell, but CTR held.</td></tr>
+        <tr><td>Sep 1-Nov 30, 2025</td><td>Organic Day</td><td class="num">193,708</td><td class="num">1,929</td><td class="num">1.00%</td><td>Clicks weakened despite impressions rebounding.</td></tr>
+        <tr><td>Dec 1, 2025-Feb 28, 2026</td><td>Organic Day</td><td class="num">189,355</td><td class="num">1,715</td><td class="num">0.91%</td><td>Weak CTR persisted while impressions rebuilt.</td></tr>
+        <tr><td>Mar 1-May 31, 2026</td><td>Organic Day</td><td class="num">360,021</td><td class="num">2,237</td><td class="num">0.62%</td><td>Impressions high, but click appeal poor.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid cols-2">
+      <div class="panel">
+        <h3>What changed first?</h3>
+        <p><span class="badge evidence">Evidence</span>Organic impressions fell from 275k in Mar-May 2025 to 145k in Jun-Aug 2025. Clicks fell from 4,524 to 2,713.</p>
+        <p><span class="badge inference">Inference</span>The first drop was at least partly visibility-led.</p>
+      </div>
+      <div class="panel">
+        <h3>What changed later?</h3>
+        <p><span class="badge evidence">Evidence</span>By Mar-May 2026, impressions were above the 2025 baseline, but CTR was only 0.62%.</p>
+        <p><span class="badge inference">Inference</span>Current Merchant Center performance is more CTR/product-matching-led than pure visibility-led.</p>
+      </div>
+    </div>
+
+    <h3>Bridge-period monthly detail</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="num">Impressions</th>
+          <th class="num">Clicks</th>
+          <th class="num">CTR</th>
+          <th>Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Dec 2025</td><td class="num">46,234</td><td class="num">362</td><td class="num">0.78%</td><td>Below historic baseline.</td></tr>
+        <tr><td>Jan 2026</td><td class="num">66,946</td><td class="num">617</td><td class="num">0.92%</td><td>Still weak; not a new break, but continuation evidence.</td></tr>
+        <tr><td>Feb 2026</td><td class="num">76,175</td><td class="num">736</td><td class="num">0.97%</td><td>CTR remains under the 2025 baseline.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Feed title rewrite timing</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Date range</th>
+          <th class="num">Title rows</th>
+          <th class="num">Rewrite-looking rows</th>
+          <th class="num">Share rows</th>
+          <th class="num">Share impressions</th>
+          <th class="num">Share clicks</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Mar-May 2025</td><td class="num">6,267</td><td class="num">0</td><td class="num">0.0%</td><td class="num">0.0%</td><td class="num">0.0%</td></tr>
+        <tr><td>Jun-Aug 2025</td><td class="num">6,037</td><td class="num">0</td><td class="num">0.0%</td><td class="num">0.0%</td><td class="num">0.0%</td></tr>
+        <tr><td>Sep-Nov 2025</td><td class="num">7,793</td><td class="num">2,678</td><td class="num">34.4%</td><td class="num">not cited</td><td class="num">51.3%</td></tr>
+        <tr><td>Dec 2025-Feb 2026</td><td class="num">3,400</td><td class="num">498</td><td class="num">14.6%</td><td class="num">33.6%</td><td class="num">32.4%</td></tr>
+        <tr><td>Mar-May 2026</td><td class="num">9,008</td><td class="num">7,674</td><td class="num">85.2%</td><td class="num">not cited</td><td class="num">72.2%</td></tr>
+      </tbody>
+    </table>
+    <p class="small">Rewrite-looking rows were identified from Merchant Center Organic Title exports where titles included the generic formal/resort suffix or a forced Melani + women's/product-type pattern. This is an audit classification, not a Google-provided label.</p>
+    <p class="small">Reconciliation note: the Dec 2025-Feb 2026 Day and Title exports match on clicks, both 1,715, but not impressions. Day export totals are used for performance totals. Title export totals are used only for title-pattern distribution.</p>
+
+    <h3>CTR drop pinpoint</h3>
+    <p><span class="badge evidence">Evidence</span>Monthly Merchant Center Organic CTR stayed above 1.5% through May 2025, held above 2% in June-July, weakened in August, broke below 1% in October 2025, stayed weak in Jan 2026, and deteriorated further in April-May 2026.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="num">Impressions</th>
+          <th class="num">Clicks</th>
+          <th class="num">CTR</th>
+          <th>Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>May 2025</td><td class="num">75,382</td><td class="num">1,142</td><td class="num">1.51%</td><td>End strong baseline.</td></tr>
+        <tr><td>June 2025</td><td class="num">39,636</td><td class="num">967</td><td class="num">2.44%</td><td>Visibility dropped, but CTR was healthy.</td></tr>
+        <tr><td>July 2025</td><td class="num">43,061</td><td class="num">938</td><td class="num">2.18%</td><td>CTR still healthy.</td></tr>
+        <tr><td>August 2025</td><td class="num">62,165</td><td class="num">808</td><td class="num">1.30%</td><td>CTR begins weakening.</td></tr>
+        <tr><td>September 2025</td><td class="num">67,212</td><td class="num">716</td><td class="num">1.07%</td><td>Near sustained break point.</td></tr>
+        <tr><td>October 2025</td><td class="num">71,047</td><td class="num">655</td><td class="num">0.92%</td><td>First full month below 1%.</td></tr>
+        <tr><td>December 2025</td><td class="num">46,234</td><td class="num">362</td><td class="num">0.78%</td><td>Weak CTR persists.</td></tr>
+        <tr><td>January 2026</td><td class="num">66,946</td><td class="num">617</td><td class="num">0.92%</td><td>Continuation evidence, not a new break.</td></tr>
+        <tr><td>February 2026</td><td class="num">76,175</td><td class="num">736</td><td class="num">0.97%</td><td>Still below baseline.</td></tr>
+        <tr><td>March 2026</td><td class="num">90,168</td><td class="num">767</td><td class="num">0.85%</td><td>Still below 1%.</td></tr>
+        <tr><td>April 2026</td><td class="num">121,730</td><td class="num">806</td><td class="num">0.66%</td><td>Further decline.</td></tr>
+        <tr><td>May 2026</td><td class="num">148,123</td><td class="num">664</td><td class="num">0.45%</td><td>Worst monthly CTR in reviewed exports.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>4. Product Feed And Source Setup</h2>
+    <p><span class="badge evidence">Evidence</span>The current product export contains 3,083 rows across AU and US feed labels. The clearest controllable Organic Shopping issue is the current title rule: all exported current products include the generic suffix "Women's Formal Dresses & Resort Wear".</p>
+
+    <div class="grid cols-3">
+      <div class="panel kpi">
+        <div class="label">Feed labels</div>
+        <div class="value">AU 1,594<br>US 1,489</div>
+        <div class="sub">Two API-driven product sources.</div>
+      </div>
+      <div class="panel kpi">
+        <div class="label">Out of stock</div>
+        <div class="value">1,099</div>
+        <div class="sub">Large share of current product rows unavailable.</div>
+      </div>
+      <div class="panel kpi">
+        <div class="label">Blank categories</div>
+        <div class="value">208</div>
+        <div class="sub">Rows missing Google product category.</div>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr><th>Feed quality signal</th><th class="num">Rows</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td>Generic title suffix present</td><td class="num">3,083</td><td>Every exported current title includes "Women's Formal Dresses & Resort Wear".</td></tr>
+        <tr><td>Out of stock</td><td class="num">1,099</td><td>High-click products may still earn visibility but cannot convert if unavailable.</td></tr>
+        <tr><td>Blank Google product category</td><td class="num">208</td><td>Can reduce product understanding and query matching quality.</td></tr>
+        <tr><td>Blank product type</td><td class="num">130</td><td>Limits custom categorisation and feed segmentation.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Title-rule deep dive</h3>
+    <p><span class="badge evidence">Evidence</span>The suffix is applied across dresses, tops, skirts, pants, sets, and products with blank product type. This creates a quality issue because Google recommends titles that identify the exact product and put important details first.</p>
+    <table>
+      <thead><tr><th>Rule issue</th><th class="num">Rows affected</th><th>Why this matters</th><th>Recommended rule direction</th></tr></thead>
+      <tbody>
+        <tr><td>Generic suffix on every title</td><td class="num">3,083</td><td>Consumes visible title space with repeated account-level wording instead of product-specific query terms.</td><td>Remove the account-wide suffix. Add product-specific terms only when truthful to that item.</td></tr>
+        <tr><td>Title starts with brand/category before product name</td><td class="num">2,401</td><td>The first visible characters often repeat brand/category language and push the product name down.</td><td>Lead with product name plus true product type, then colour/material/occasion, then brand.</td></tr>
+        <tr><td>Brand casing inconsistency</td><td class="num">3,083</td><td>Mixed brand strings reduce polish and make QA harder.</td><td>Normalise brand to the client's preferred casing, recommended here as "Melani The Label".</td></tr>
+        <tr><td>Product type inconsistency or blanks</td><td class="num">multiple</td><td>Product type appears as TOP, Top, DRESSES, Dresses, Dress, pants, PANTS, two piece, and blank.</td><td>Map products into stable groups before title rules run.</td></tr>
+        <tr><td>Category mismatch risk</td><td class="num">visible</td><td>Some tops and two-piece examples are categorised as Outfit Sets or Dresses while the title says TOP or two piece.</td><td>Fix category first, then generate titles from corrected category/product type.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>When did the resort-wear suffix first appear?</h3>
+    <p><span class="badge evidence">Evidence</span>The exact suffix does not appear in the reviewed Organic Title exports for Mar-May 2025, Jun-Aug 2025, Sep-Nov 2025, or Dec 2025-Feb 2026. It first appears in the reviewed historical exports in Mar-May 2026. A broader brand + women's + category rewrite pattern appears earlier, from Sep-Nov 2025.</p>
+    <table>
+      <thead><tr><th>Period</th><th>Traffic filter</th><th class="num">Title rows</th><th class="num">Rows with exact suffix</th><th class="num">Share rows</th><th class="num">Share clicks</th><th>Read</th></tr></thead>
+      <tbody>
+        <tr><td>Mar 1-May 31, 2025</td><td>Organic</td><td class="num">6,267</td><td class="num">0</td><td class="num">0.0%</td><td class="num">0.0%</td><td>No suffix detected.</td></tr>
+        <tr><td>Jun 1-Aug 31, 2025</td><td>Organic</td><td class="num">6,037</td><td class="num">0</td><td class="num">0.0%</td><td class="num">0.0%</td><td>No suffix detected.</td></tr>
+        <tr><td>Sep 1-Nov 30, 2025</td><td>Organic</td><td class="num">7,793</td><td class="num">0</td><td class="num">0.0%</td><td class="num">0.0%</td><td>Broader rewrite pattern begins, but not this exact suffix.</td></tr>
+        <tr><td>Dec 1, 2025-Feb 28, 2026</td><td>Organic</td><td class="num">3,400</td><td class="num">0</td><td class="num">0.0%</td><td class="num">0.0%</td><td>No exact suffix detected.</td></tr>
+        <tr><td>Mar 1-May 31, 2026</td><td>Organic</td><td class="num">9,008</td><td class="num">5,977</td><td class="num">66.4%</td><td class="num">50.6%</td><td>First reviewed period where the exact suffix appears.</td></tr>
+        <tr><td>Jun 19, 2026 current product export</td><td>Current products</td><td class="num">3,083</td><td class="num">3,083</td><td class="num">100.0%</td><td class="num">n/a</td><td>Current feed state: every exported product has the suffix.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <p><span class="badge inference">Inference</span>The safest timestamp is a window: the exact resort/formal suffix was introduced sometime after Feb 28, 2026 and before or during the Mar 1-May 31, 2026 export window. Merchant Center change history or Shopify/Simprosys app logs would be needed to identify the exact day.</p>
+    </div>
+
+    <h3>Correlation with Organic Shopping performance</h3>
+    <p><span class="badge evidence">Evidence</span>The title-rewrite timing correlates with the later Organic Shopping CTR decline. It does not explain the June 2025 break, but it aligns with the CTR problem from Sep-Nov 2025 onward. In Mar-May 2026, titles with the exact suffix had materially weaker CTR than titles without that exact suffix.</p>
+    <table>
+      <thead><tr><th>Signal</th><th class="num">Rows</th><th class="num">Impressions</th><th class="num">Clicks</th><th class="num">CTR</th><th>Read</th></tr></thead>
+      <tbody>
+        <tr><td>Mar-May 2026 titles with exact suffix</td><td class="num">5,977</td><td class="num">205,136</td><td class="num">1,133</td><td class="num">0.55%</td><td>Lowest-performing title group in the current title export.</td></tr>
+        <tr><td>Mar-May 2026 titles without exact suffix</td><td class="num">3,031</td><td class="num">119,442</td><td class="num">1,104</td><td class="num">0.92%</td><td>Still below early-2025 levels, but materially stronger than suffixed titles.</td></tr>
+        <tr><td>Mar-May 2026 broad rewrite pattern</td><td class="num">7,213</td><td class="num">250,622</td><td class="num">1,593</td><td class="num">0.64%</td><td>Broad rewritten-looking titles made up 80.1% of title rows and 71.2% of clicks.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <p><span class="badge inference">Inference</span>This is a strong optimisation opportunity, not a single-cause diagnosis. The suffixed titles are not the only reason Organic Shopping is down, but they are one of the clearest controllable issues because current impressions are high while CTR is weak.</p>
+    </div>
+
+    <h3>Phase 1 controlled test: title clean-up for Organic Shopping</h3>
+    <p><span class="badge recommendation">Recommendation</span>Run the title fix as a Phase 1 controlled test before a full feed rollout. The goal is to prove whether cleaner, product-specific titles can lift Organic Shopping CTR without creating eligibility, category, or market-targeting issues.</p>
+    <table>
+      <thead><tr><th>Test element</th><th>Phase 1 setup</th><th>Why this is the right first step</th></tr></thead>
+      <tbody>
+        <tr><td>Products included</td><td>Start with 30-60 high-impression products across dresses/gowns, tops, skirts, pants, and sets. Include both AU Simprosys and US Content API examples.</td><td>Focuses on products where Google already provides visibility but clicks are weak.</td></tr>
+        <tr><td>Products excluded</td><td>Exclude out-of-stock products, products with unresolved category ambiguity, and low-impression long-tail variants.</td><td>Keeps the test clean and avoids confusing title impact with stock or data-quality problems.</td></tr>
+        <tr><td>Title change</td><td>Remove the global suffix and use category-specific templates: product name, true product type, colour/material/occasion where truthful, then brand.</td><td>Tests the most direct fix to the observed title-quality issue.</td></tr>
+        <tr><td>Data fixes before test</td><td>Normalise product type, Google product category, brand casing, and colour casing for test products before publishing title changes.</td><td>Prevents bad source data from generating bad titles again.</td></tr>
+        <tr><td>Duration</td><td>Run for 2-4 weeks after Merchant Center has refreshed and approved the updated products.</td><td>Allows enough time for free listing impressions and clicks to settle.</td></tr>
+        <tr><td>Primary KPI</td><td>Merchant Center Organic CTR for the edited product set.</td><td>CTR is the metric most directly connected to the observed issue.</td></tr>
+        <tr><td>Secondary KPIs</td><td>Organic Shopping clicks, impressions, product eligibility, disapprovals, limited visibility, and GA4 Organic Shopping sessions/revenue where available.</td><td>Ensures CTR gains do not come from lost visibility or product eligibility issues.</td></tr>
+        <tr><td>Success threshold</td><td>Look for CTR moving toward the non-suffixed benchmark of 0.92%, or at least a clear lift from the suffixed baseline of 0.55%.</td><td>Uses observed Melani data rather than an arbitrary external benchmark.</td></tr>
+        <tr><td>Rollout decision</td><td>If CTR improves without eligibility issues, expand by category. If CTR is flat, check query/product fit, images, price, availability, and category mapping before broader rollout.</td><td>Keeps the recommendation non-destructive and evidence-led.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Suggested fixes to improve Organic Shopping</h3>
+    <table>
+      <thead><tr><th>Fix</th><th>What to do</th><th>Why it should help</th><th>How to validate</th></tr></thead>
+      <tbody>
+        <tr><td>Remove the global suffix</td><td>Stop appending "Women's Formal Dresses & Resort Wear" to every product.</td><td>Reduces irrelevant wording and gives Google/shoppers clearer product-specific titles.</td><td>Preview feed rows before publishing; monitor Organic Shopping CTR weekly.</td></tr>
+        <tr><td>Rewrite titles by product category</td><td>Use different templates for gowns/dresses, tops, skirts, pants, sets, swim/resort, and accessories.</td><td>Prevents tops, pants, and skirts being described as dresses or resort wear.</td><td>QA 10-20 products per category and compare title CTR after 2-4 weeks.</td></tr>
+        <tr><td>Fix product type and category first</td><td>Normalise product type casing and fill blank Google product categories before title generation.</td><td>Title rules will be wrong if the source category is wrong or blank.</td><td>Target zero blank product type for active products and zero blank Google category for priority products.</td></tr>
+        <tr><td>Lead with product name</td><td>Use product name + true product type + colour/material before brand or generic category terms.</td><td>Improves visible title quality and query matching for product-specific searches.</td><td>Check top-impression titles in Merchant Center after feed refresh.</td></tr>
+        <tr><td>Normalise brand casing</td><td>Use one brand form, preferably "Melani The Label" unless the client specifies another.</td><td>Improves feed consistency and client polish.</td><td>Export products after change and confirm one brand casing across AU and US labels.</td></tr>
+        <tr><td>Prioritise high-impression poor-CTR products</td><td>Start with titles receiving high impressions but below 0.5% CTR, especially generic suffixed titles.</td><td>Fastest upside is where Google is already showing products but users are not clicking.</td><td>Track before/after CTR for the edited product set, not only account average.</td></tr>
+        <tr><td>Separate AU/US feed QA</td><td>Preview the same templates across AU Simprosys and US Content API sources.</td><td>The issue appears in both feeds, and AU also targets the US market.</td><td>Compare title output, category, availability, and destination by feed label.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Ten title examples: source, rule symptom, recommended fix</h3>
+    <p><span class="badge evidence">Evidence</span>These examples come from the current product export. Feed source is mapped from the visible Merchant Center source setup: AU feed label uses Simprosys Feed (Merchant API); US feed label uses Content API. The current rule pattern below is the observed output pattern in the export, not a live rule edit.</p>
+    <table>
+      <thead><tr><th>#</th><th>Feed source</th><th>Current title</th><th>Current rule pattern / problem</th><th>Recommended fix</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>US - Content API</td><td>MELANI THE LABEL Women's TOP LEXI TOP - XS / Black, Women's Formal Dresses & Resort Wear</td><td>Top receives dress/resort suffix; product name is delayed by brand + gender + product type.</td><td>Lexi Top - Black | Melani The Label. Also confirm category should be Shirts & Tops, not Outfit Sets.</td></tr>
+        <tr><td class="num">2</td><td>US - Content API</td><td>MELANI LABEL Women's SKIRTS ELLE SKIRT - XL / OMBRE / chiffon, Women's Formal Dresses & Resort Wear</td><td>Skirt receives dress/resort suffix; noisy variant formatting; brand casing differs from other rows.</td><td>Elle Skirt - Ombre Chiffon | Melani The Label.</td></tr>
+        <tr><td class="num">3</td><td>AU - Simprosys Feed (Merchant API)</td><td>MELANI LABEL Womens' PANTS DELFINA PANT - Black / XL, Women's Formal Dresses & Resort Wear</td><td>Pants receive dress/resort suffix; inconsistent apostrophe and brand casing.</td><td>Delfina Pant - Black | Melani The Label.</td></tr>
+        <tr><td class="num">4</td><td>AU - Simprosys Feed (Merchant API)</td><td>Melani label Womens' VALENTINA - XS / Ivory, Women's Formal Dresses & Resort Wear</td><td>Product type is blank, so the generic suffix is compensating for missing source data.</td><td>Set product type to Gown or Dress, then use Valentina Gown - Ivory | Melani The Label.</td></tr>
+        <tr><td class="num">5</td><td>AU - Simprosys Feed (Merchant API)</td><td>MELANI THE LABEL Womens' DRESSES LEVIAH - SHIRAZ LACE / XL, Women's Formal Dresses & Resort Wear</td><td>Dress title is relevant category, but still too generic and places repeated wording after the variant.</td><td>Leviah Dress - Shiraz Lace | Melani The Label, or Leviah Lace Gown - Shiraz | Melani The Label if gown is accurate.</td></tr>
+        <tr><td class="num">6</td><td>US - Content API</td><td>MELANI THE LABEL Women's two piece EBONI - XS / Black / Chiffon, Women's Formal Dresses & Resort Wear</td><td>Two-piece product is categorised as Dresses in the export and receives dress/resort suffix.</td><td>Eboni Set - Black Chiffon | Melani The Label. Fix category to Outfit Sets if the product is sold as a set.</td></tr>
+        <tr><td class="num">7</td><td>AU - Simprosys Feed (Merchant API)</td><td>Melani label Womens' Dresses MARIA - XL / Bronze Gold, Women's Formal Dresses & Resort Wear</td><td>Google product category is blank; title uses generic suffix rather than precise gown wording.</td><td>Maria Gown - Bronze Gold | Melani The Label. Fill Google product category as Dresses.</td></tr>
+        <tr><td class="num">8</td><td>US - Content API</td><td>MELANI LABEL Women's DRESSES YELENA - XS / Mulberry, Women's Formal Dresses & Resort Wear</td><td>Out-of-stock dress variant still carries generic title structure; brand casing inconsistent.</td><td>Yelena Gown - Mulberry | Melani The Label. Review whether out-of-stock variants should remain prominent.</td></tr>
+        <tr><td class="num">9</td><td>AU - Simprosys Feed (Merchant API)</td><td>Melani label Womens' DRESSES DANIELA - XL / BUTTER YELLOW, Women's Formal Dresses & Resort Wear</td><td>Google category is blank in the inspected row; title relies on generic dress/resort wording.</td><td>Daniela Dress - Butter Yellow | Melani The Label. Fill category and keep colour casing consistent.</td></tr>
+        <tr><td class="num">10</td><td>AU - Simprosys Feed (Merchant API)</td><td>Melani label Womens' Dresses MILANA - M / RED, Women's Formal Dresses & Resort Wear</td><td>Relevant dress product, but title is long and repeats generic suffix instead of selling the specific style.</td><td>Milana Dress - Red | Melani The Label, adding material or occasion only if confirmed in source data.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Merchant Center source setup</h3>
+    <table>
+      <thead><tr><th>Source</th><th>Source ID</th><th>Feed label</th><th>Countries / methods</th><th>Products</th></tr></thead>
+      <tbody>
+        <tr><td>Simprosys Feed (Merchant API)</td><td>10364633832</td><td>AU</td><td>Australia, New Zealand, United States; Free listings + Shopping ads</td><td>1,594</td></tr>
+        <tr><td>Content API</td><td>10592979531</td><td>US</td><td>United States feed label shown; Free listings + Shopping ads</td><td>1,489</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <p><span class="badge inference">Inference</span>The AU source also targeting the United States alongside the US feed creates potential duplication or cross-market matching risk. Review this before changing feed targeting.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Organic Search And Collection Pages</h2>
+    <p><span class="badge evidence">Evidence</span>GA4 landing-page losses show priority impact across collection and homepage entry points. Existing crawl metadata was used for collection SEO checks.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Priority page</th>
+          <th>Audit focus</th>
+          <th>Recommended action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>/collections/dresses</td><td>Main commercial collection.</td><td>Strengthen title/H1 alignment, intro copy, internal links, and merchandising.</td></tr>
+        <tr><td>/collections/all-dresses</td><td>Likely broad dress discovery route.</td><td>Clarify differentiation from Dresses and avoid thin/duplicate collection intent.</td></tr>
+        <tr><td>/collections/maxis</td><td>Specific dress style route.</td><td>Improve collection copy and internal links from Dresses and New Arrivals.</td></tr>
+        <tr><td>/collections/sets</td><td>Non-dress commercial route.</td><td>Ensure title/meta targets sets co-ord searches, not only dress language.</td></tr>
+        <tr><td>/collections/gowns</td><td>High-intent formal route.</td><td>Align page copy and product merchandising with formal gown queries.</td></tr>
+        <tr><td>/collections/new-arrivals</td><td>Freshness and internal discovery.</td><td>Use as internal link hub to priority collections and current stock.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <p><span class="badge inference">Inference</span>Organic Search recovery likely needs both technical/content collection work and feed quality work. Merchant Center title and category issues can suppress Shopping clicks even when organic collection pages improve.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. Prioritised Recommendations</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Recommendation</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Urgent</td><td>Audit late-May 2025 tracking, attribution, campaign tagging, consent, and Shopify theme/app changes.</td><td>June 2025 includes a major Unassigned jump and sitewide conversion/engagement decline.</td></tr>
+        <tr><td>Urgent</td><td>Rewrite Merchant Center title attribute rules by product category.</td><td>Current generic title suffix is widespread, while CTR has fallen materially.</td></tr>
+        <tr><td>Urgent</td><td>Fix blank or incorrect Google product categories and product types.</td><td>Category data helps Google understand and match products.</td></tr>
+        <tr><td>Next</td><td>Review AU source targeting United States alongside the US source.</td><td>Current setup may create cross-feed overlap risk.</td></tr>
+        <tr><td>Next</td><td>Review high-click and high-impression out-of-stock products.</td><td>1,099 rows are out of stock; unavailable products can waste visibility.</td></tr>
+        <tr><td>Next</td><td>Continue collection SEO work for Dresses, All Dresses, Maxis, Sets, Gowns, and New Arrivals.</td><td>Organic Search revenue has not recovered to early-2025 levels.</td></tr>
+        <tr><td>Monitor</td><td>Track Merchant Center Organic CTR weekly after feed/title changes.</td><td>Current impressions are not the main issue; click-through rate is the key recovery metric.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Evidence, Sources, And Limitations</h2>
+    <h3>Files and exports used</h3>
+    <ul>
+      <li>GA4 checks for monthly revenue, purchases, sessions, users, engagement, and channel grouping.</li>
+      <li>Merchant Center Organic Day and Title exports for Mar-May 2025, Jun-Aug 2025, Sep-Nov 2025, Dec 2025-Feb 2026, and Mar-May 2026.</li>
+      <li>Bridge period Day export: /Users/laurencedeer/Downloads/Performance_2026-06-19_15-38-36.csv.</li>
+      <li>Bridge period Title export: /Users/laurencedeer/Downloads/Performance_2026-06-19_15-39-11.csv.</li>
+      <li>Merchant Center Products export ZIP containing current product TSV.</li>
+      <li>Merchant Center screenshots for AU/US data sources and attribute rules.</li>
+      <li>Existing crawl metadata for collection-page SEO checks.</li>
+    </ul>
+    <h3>Limitations</h3>
+    <ul>
+      <li>GA4 is the source of truth for revenue and purchases because Merchant Center purchase data appears absent or inconsistent before 2026.</li>
+      <li>Merchant Center Day exports are used for performance totals. Title exports are used for title-level distribution and may not reconcile exactly on impression totals.</li>
+      <li>Search Console historical availability was limited in this environment; do not treat pre-2026 Search Console trend coverage as complete unless separately exported.</li>
+      <li>Needs Attention diagnostics were not available as a supplied export. If Merchant Center shows no issues, retain screenshot evidence before stating the account has no current product issues.</li>
+      <li>No Merchant Center, Shopify, feed-rule, API registration, or product-data changes were made during this audit.</li>
+    </ul>
+    <h3>Google references</h3>
+    <ul>
+      <li><a href="https://support.google.com/merchants/answer/12159540">Merchant Center product performance metrics</a>: Google defines impressions, clicks, CTR, purchases, and purchase rate; CTR is clicks divided by impressions.</li>
+      <li><a href="https://support.google.com/merchants/answer/6324415">Title attribute guidance</a>: Google states titles should clearly identify the product, accurately describe the linked landing page product, distinguish variants, and use professional language.</li>
+      <li><a href="https://support.google.com/merchants/answer/7052112">Product data specification</a>: Google uses product data to match products to queries; inaccurate or missing data can cause disapprovals, limited eligibility, incorrect display, and other issues.</li>
+      <li><a href="https://support.google.com/merchants/answer/14994083">Attribute rules</a>: Google describes attribute rules as a way to transform product data, including concatenating attributes and static strings into titles.</li>
+      <li><a href="https://support.google.com/merchants/answer/13982673">Data sources</a>: Google documents how data sources provide product information to Merchant Center.</li>
+      <li><a href="https://support.google.com/merchants/answer/12476548">Needs attention tab</a>: Google describes issue views, impacted products, click potential, and downloadable issue views.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

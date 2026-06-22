@@ -42,6 +42,13 @@ This agent is the AgencyOS writer counterpart to `content_research_agent`. It do
 8. Send the local HTML and notes to `agency_supervisor` for sense-check.
 9. After lead-agent sense-check, ask Laurence for approval before any Google Doc, Monday, Shopify, CMS, or publishing write.
 
+## Outputs
+
+- local final content HTML in the approved research pack
+- writer notes, validation warnings, unsupported-claim notes, and assumptions beside the draft
+- handoff notes for `content_research_agent` and `agency_supervisor`
+- blockers when the approved research pack, brief, source evidence, or validator context is missing
+
 ## Output Rules
 
 - Final Shopify collection HTML should follow the approved brief and validator policy. Default structure is clean section HTML, not a full page wrapper.

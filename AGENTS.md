@@ -58,6 +58,32 @@ Use the relevant Codex skill when the task matches it:
 - `monday-bigquery-snapshot-export`: safe Monday metadata snapshot refreshes.
 - `agency-memory-safety-review`: final review for cost, privacy, and source-of-truth mistakes.
 
+- `langfuse-cost-investigation`: expensive Langfuse/Codex session diagnosis, duplicate trace checks, token/cost review.
+
+## Efficiency Guardrails
+
+This project optimizes for balanced efficiency: preserve safety and client-quality review, but avoid repeated full-context spend.
+
+- Use the validated workflow fast path when a task matches an existing skill or runbook. Read the most specific skill first, then read only the minimum project guidance needed for safety. Do not re-inspect helper source, schemas, or long docs unless the workflow fails, changed recently, the source boundary is unclear, or Laurence asks for implementation detail.
+- Prefer targeted discovery: `rg --files`, narrow `rg`, and bounded `sed` ranges. Exclude `.venv`, `node_modules`, `dist`, `__pycache__`, ignored caches, generated reports, binary/media files, and large local artifacts unless the task specifically requires them.
+- Use low-cost exploration first: file maps, metadata-only API checks, row counts, schemas, compact logs, and summarized command output before broad synthesis.
+- Keep `gpt-5.5` for orchestration, final synthesis, high-risk privacy/cost review, and client-facing claims. Prefer cheaper or low-reasoning workers for bounded read-only scans, file mapping, log summaries, and other narrow exploration.
+- For long implementation loops, split the work after repeated tool/edit cycles or when context has clearly grown large. Summarize current state, open decisions, files changed, and verification status before continuing.
+- Treat these as soft review triggers, not hard budgets: high input share, many observations/tool calls, duplicate trace candidates, repeated failed commands, or late generations with very large input context.
+- After about 20 tool calls, repeated `write_stdin` polling, or a follow-up that would reuse a large context, pause to summarize and narrow. Prefer longer command waits, sanitized temp files, and compact summaries over chat-loop polling.
+- Separate user-answer work from reusable-system work. If a client/reporting answer suggests a skill, doc, or helper improvement, finish the answer first and make the reusable improvement in a fresh thread unless Laurence explicitly asks to combine them.
+- Langfuse/Codex usage reviews should be metadata-only by default. Fetch prompt/tool input-output payloads only for approved debugging and only at the smallest useful scope.
+
+## Codex Cost Hygiene
+
+Cost controls are advisory-first: reduce repeated input spend without skipping verification, privacy review, client-facing checks, or required dry-runs.
+
+- Start each substantive AgencyOS Codex session with `agent=<agent_id> task=<task_type>`, then the active-agent identity sentence.
+- Batch independent read-only inspection where useful, but keep reads targeted and summarized before synthesis.
+- Split or restart a turn when work has many tool calls, repeated command/edit cycles, or context is already large. The handoff should include only goal, files changed, open decisions, verification status, and next command.
+- When a Langfuse report flags duplicate traces, high input share, many observations, or missing metadata, treat it as a review trigger for the next run. Do not let the flag block necessary quality work.
+- For expensive-session reviews, report gross cost and likely unique cost when duplicate trace candidates appear.
+
 ## Active Agent Identity And Delegation
 
 Every Codex session in this project should make the active operating role visible.
@@ -67,6 +93,38 @@ At the start of substantive work, identify the active agent in chat using this s
 ```text
 `system_admin_agent` reporting for work: checking AgencyOS health and guardrails.
 ```
+
+## Langfuse Usage Tracking
+
+For every substantive AgencyOS Codex task, start the first assistant update with a machine-readable tracking line before the normal identity sentence:
+
+```text
+agent=<agent_id> task=<task_type>
+```
+
+Example:
+
+```text
+agent=system_admin_agent task=health-check
+`system_admin_agent` reporting for work: checking AgencyOS health and guardrails.
+```
+
+This lets `scripts/langfuse_agencyos_usage_report.py` group Codex token usage by agent and task type in Langfuse.
+
+Use the task types from `docs/AGENCYOS_LANGFUSE_USAGE.md` unless a task clearly needs a new category. Starter task types:
+
+| Task type | Use when |
+| --- | --- |
+| `health-check` | AgencyOS, BigQuery, config, data freshness, guardrails |
+| `reporting` | Monthly reporting, client-safe notes, reporting prep, portal QA |
+| `bigquery-query` | BigQuery data questions, capped SQL, query result review |
+| `debugging` | Failing scripts, tests, local runs, config fixes |
+| `docs` | Guides, handovers, runbooks, operating notes |
+| `frontend` | Dashboard UI, browser verification, screenshots |
+| `automation` | Recurring jobs, scheduled runs, local agent automation |
+| `privacy-review` | Credential, source-boundary, Drive/Monday/email safety checks |
+
+Use existing agent IDs from the active-agent mapping below. Do not include client secrets, credential values, raw private content, or Langfuse keys in tracking metadata.
 
 Use the most specific project agent for the task. If the user asks a general BigQuery agency-memory question, default to `agency_supervisor` for orchestration. Switch to a specialist identity when the work clearly belongs to that specialist, and state the switch briefly.
 

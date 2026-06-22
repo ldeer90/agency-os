@@ -11,6 +11,9 @@ venv/
 .env
 .env.*
 !.env.example
+.codex/langfuse.json
+.codex/*.log
+.codex/*.langfuse
 .secrets/
 *.pem
 *.p12
@@ -28,6 +31,7 @@ data/comms_memory/staging/
 data/roadmap_memory/staging/
 data/client_health/*.json
 reports/daily/
+reports/langfuse/
 dashboard/web/node_modules/
 dashboard/web/dist/
 dashboard/web/public/dashboard-payload.json

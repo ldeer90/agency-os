@@ -243,7 +243,16 @@ Safe ad hoc BigQuery query:
 .venv/bin/python scripts/bq_capped_query.py \
   --purpose "handover: verify latest ingestion runs" \
   --limit-preview 10 \
-  --sql "SELECT source_id, status, started_at, completed_at, rows_loaded FROM \`seo-agency-work.agency_control.ingestion_runs\` ORDER BY started_at DESC LIMIT 10"
+  --sql "SELECT run_id, source_id, source_path, status, started_at, completed_at, destination_table, rows_loaded FROM \`seo-agency-work.agency_control.ingestion_runs\` ORDER BY started_at DESC LIMIT 10"
+```
+
+Safe recent cost-check status query:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+--purpose "handover: recent cost-check status" \
+--limit-preview 20 \
+--sql "SELECT status, COUNT(*) AS checks, MAX(estimated_bytes) AS max_estimated_bytes, MAX(logged_at) AS latest_logged_at FROM \`seo-agency-work.agency_control.cost_checks\` WHERE logged_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 6 HOUR) GROUP BY status ORDER BY status"
 ```
 
 ## Recommended Next Work

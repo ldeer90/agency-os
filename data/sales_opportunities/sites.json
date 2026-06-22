@@ -1,0 +1,89 @@
+{
+  "notes": "Local source of truth for lead and lost-sales SEO snapshots. Keep rows metadata-only: no emails, phone numbers, private notes, credentials, or raw conversation text.",
+  "sites": [
+    {
+      "opportunity_slug": "kad3d",
+      "business_name": "kad3d.com.au",
+      "domain": "kad3d.com.au",
+      "site_url": "https://kad3d.com.au",
+      "status": "lost",
+      "source": "monday_sales_board_5025423034",
+      "owner": "agency_supervisor",
+      "market": "au",
+      "currency": "AUD",
+      "notes_summary": "Imported from sanitized Monday closed-lost sales item."
+    },
+    {
+      "opportunity_slug": "eliteplusaccounting",
+      "business_name": "Eliteplusaccounting.com.au",
+      "domain": "eliteplusaccounting.com.au",
+      "site_url": "https://eliteplusaccounting.com.au",
+      "status": "lost",
+      "source": "monday_sales_board_5025423034",
+      "owner": "agency_supervisor",
+      "market": "au",
+      "currency": "AUD",
+      "notes_summary": "Imported from sanitized Monday closed-lost sales item."
+    },
+    {
+      "opportunity_slug": "bride-tribe",
+      "business_name": "Bride Tribe",
+      "domain": "bridetribes.com.au",
+      "site_url": "https://bridetribes.com.au",
+      "status": "lost",
+      "source": "monday_sales_board_5025423034",
+      "owner": "agency_supervisor",
+      "market": "au",
+      "currency": "AUD",
+      "notes_summary": "Imported from sanitized Monday closed-lost sales item."
+    },
+    {
+      "opportunity_slug": "national-motor-claims",
+      "business_name": "National Motor Claims",
+      "domain": "nationalmotorclaims.com.au",
+      "site_url": "https://nationalmotorclaims.com.au",
+      "status": "lost",
+      "source": "monday_sales_board_5025423034",
+      "owner": "agency_supervisor",
+      "market": "au",
+      "currency": "AUD",
+      "notes_summary": "Imported from sanitized Monday closed-lost sales item."
+    },
+    {
+      "opportunity_slug": "carolina-lifestyle",
+      "business_name": "Carolina Lifestyle",
+      "domain": "carolina.net.au",
+      "site_url": "https://carolina.net.au",
+      "status": "lost",
+      "source": "monday_sales_board_5025423034",
+      "owner": "agency_supervisor",
+      "market": "au",
+      "currency": "AUD",
+      "notes_summary": "Imported from sanitized Monday closed-lost sales item."
+    },
+    {
+      "opportunity_slug": "noah",
+      "business_name": "Noah",
+      "domain": "noah.com.au",
+      "site_url": "https://noah.com.au",
+      "status": "lost",
+      "source": "monday_sales_board_5025423034",
+      "owner": "agency_supervisor",
+      "market": "au",
+      "currency": "AUD",
+      "notes_summary": "Imported from sanitized Monday closed-lost sales item."
+    },
+    {
+      "opportunity_slug": "my-budget",
+      "business_name": "My Budget",
+      "domain": "mybudget.com.au",
+      "site_url": "https://mybudget.com.au",
+      "status": "lost",
+      "source": "monday_sales_board_5025423034",
+      "owner": "agency_supervisor",
+      "market": "au",
+      "currency": "AUD",
+      "notes_summary": "Imported from sanitized Monday closed-lost sales item."
+    }
+  ]
+}

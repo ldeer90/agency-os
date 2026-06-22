@@ -26,6 +26,8 @@ This workflow loads local agency-ops snapshots into BigQuery as a one-way memory
 | Technical crawl memory | Screaming Frog MCP/CLI summary exports, approved crawl manifests, and technical audit sidecars | 18-month crawl baseline, post-task comparison evidence, and issue-count reporting |
 | Google Drive filing | SEO Automation client briefs, sidecars, and Drive filing rules | Metadata-only route memory later; no raw Drive contents |
 
+| Sales opportunity SEO snapshots | Local `data/sales_opportunities/sites.json`, SE Ranking domain/backlink estimates, approved Screaming Frog crawl IDs | Lead/lost-sales quarterly comparison memory; not active-client reporting source truth |
+
 BigQuery does not write back to monday.com in v1.
 
 ## Privacy Boundaries
@@ -37,6 +39,8 @@ For monday item column values, it keeps operational fields such as status, owner
 Client registry rows may store favicon display metadata from `config/client_favicons.json` or deterministic URLs derived from the approved public canonical host. This is limited to `favicon_url`, `favicon_source`, and `favicon_candidates_json`; the loader does not scrape site pages, download images, or store binary favicon content.
 
 Client finance rows store monthly status, retainer amount, client-specific expense placeholders, net amount, and derived billing flags. Current/future retainer rows are overlaid from the local Monday Client Board snapshot using safe commercial metadata only: client name, group, start date, retainer, invoice agreement, invoicing schedule, and agreed increase amount. Agency expense rows store only Monday expense item names, monthly cost, start/renewal dates, invoicing schedule date, agreement label, and active flags from the local Expenses board snapshot. They must not store invoice documents, raw accounting exports, private contact details, card/bank data, notes from private communications, Monday updates/comments/descriptions, or credential-like values.
+
+Sales opportunity rows store metadata-only lead/lost-sales domains, SE Ranking estimate metrics, backlink summary counts, and approved crawl IDs. They must not store raw sales notes, emails, phone numbers, private decision notes, raw HTML, visible page text, screenshots, or raw Screaming Frog archives.
 
 ## Client Onboarding Context Boundary
 
@@ -136,6 +140,8 @@ Memory:
 - `agency_memory.client_crawl_issue_rows`
 - `agency_memory.client_crawl_link_rows`
 - `agency_memory.client_crawl_export_rows`
+- `agency_memory.sales_opportunity_sites`
+- `agency_memory.sales_opportunity_seo_snapshots`
 
 Reporting:
 
@@ -155,6 +161,7 @@ Reporting:
 - `agency_reporting.client_crawl_comparison`
 - `agency_reporting.reporting_readiness`
 - `agency_reporting.ops_drift_summary`
+- `agency_reporting.sales_opportunity_quarterly_comparison`
 
 All reporting marts are built through the capped BigQuery runner.
 
@@ -196,7 +203,9 @@ The smoke command checks GA4, Search Console, and SE Ranking with one small requ
 For comparative analysis, pull live monthly API summaries into:
 
 - `agency_memory.client_monthly_api_snapshots`
+- `agency_memory.client_monthly_page_api_snapshots`
 - `agency_reporting.client_monthly_performance_history`
+- `agency_reporting.client_collection_page_performance_history`
 - `agency_reporting.client_monthly_comparison`
 - `agency_reporting.client_trailing_performance`
 - `agency_reporting.client_benchmark_summary`
@@ -215,13 +224,16 @@ Run the live pull for all active reporting clients:
 .venv/bin/python scripts/load_monthly_api_snapshots.py
 ```
 
-The script reads active clients from `seo-reporting-platform/config/clients.json`, calls GA4, Search Console, and SE Ranking read-only APIs, loads one row per client/month, and builds the reporting history mart through the capped BigQuery runner. It does not write source report JSON, Monday, Drive, or client files.
+The script reads active clients from `seo-reporting-platform/config/clients.json`, calls GA4, Search Console, and SE Ranking read-only APIs, loads one row per client/month, and loads collection-page rows at client/month/page-path granularity. It builds reporting history marts through the capped BigQuery runner. It does not write source report JSON, Monday, Drive, or client files.
+
+Collection-page performance is monthly, not daily. `client_monthly_page_api_snapshots` stores collection paths only, keyed by normalized `page_path`, with GA4 organic landing-page metrics and Search Console page metrics merged where available. This is intended for efficient 3/6/12-month collection trend checks without storing every daily page/query row.
 
 For analysis, use:
 
 - `agency_reporting.client_monthly_comparison` for MoM and YoY deltas.
 - `agency_reporting.client_trailing_performance` for rolling 3, 6, and 12 month totals.
 - `agency_reporting.client_benchmark_summary` for latest-month client rankings and status.
+- `agency_reporting.client_collection_page_performance_history` for collection-page monthly GA4/GSC trends.
 
 ## Weekly Summarized Comms Memory
 

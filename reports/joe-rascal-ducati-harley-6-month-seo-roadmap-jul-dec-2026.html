@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Joe Rascal Ducati + Harley 6-Month Search Growth Roadmap</title>
+  <style>
+    :root {
+      --paper: #f6f4ee;
+      --surface: #ffffff;
+      --surface-soft: #f8faf9;
+      --ink: #1f2933;
+      --muted: #64707a;
+      --line: #dfe5e7;
+      --accent: #315f72;
+      --accent-soft: #e5eff3;
+      --sage: #567267;
+      --sage-soft: #e8f0ec;
+      --sand: #c5a46f;
+      --sand-soft: #f4ecd9;
+      --shadow: 0 24px 60px -40px rgba(31, 41, 51, 0.46);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(49, 95, 114, 0.10), transparent 31rem),
+        linear-gradient(180deg, #f2f4f1 0%, var(--paper) 38%, #f8faf9 100%);
+      color: var(--ink);
+      font-family: "Aptos", "Segoe UI", Arial, Helvetica, sans-serif;
+      line-height: 1.58;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 40px 0 72px;
+    }
+
+    header,
+    section,
+    .month-card {
+      border: 1px solid rgba(91, 108, 116, 0.16);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 28px;
+      padding: 42px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 249, 0.94)),
+        linear-gradient(120deg, rgba(229, 239, 243, 0.74), rgba(244, 236, 217, 0.66));
+    }
+
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 7px;
+      background: linear-gradient(90deg, var(--ink), var(--accent), var(--sand));
+    }
+
+    section {
+      margin: 22px 0;
+      padding: 28px;
+    }
+
+    h1 {
+      max-width: 920px;
+      margin: 0 0 18px;
+      color: var(--ink);
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 800;
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      color: var(--ink);
+      font-size: 27px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      margin: 0 0 12px;
+      color: #26343d;
+      font-size: 21px;
+      line-height: 1.25;
+    }
+
+    h4 {
+      margin: 0 0 10px;
+      color: #304047;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 14px; }
+
+    .lede {
+      max-width: 960px;
+      color: #47545d;
+      font-size: 18px;
+    }
+
+    .note {
+      max-width: 880px;
+      margin: 24px 0;
+      padding: 16px 18px;
+      border: 1px solid rgba(197, 164, 111, 0.28);
+      border-left: 6px solid var(--sand);
+      border-radius: 16px;
+      background: var(--sand-soft);
+      color: #3d3529;
+    }
+
+.stat-grid,
+.work-grid,
+.link-grid {
+display: grid;
+gap: 14px;
+}
+
+.stat-grid {
+grid-template-columns: repeat(2, minmax(0, 1fr));
+margin: 18px 0 8px;
+}
+
+    .work-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      align-items: start;
+      margin-top: 18px;
+    }
+
+    .link-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+.stat-card,
+.mini-card,
+.link-card {
+      border: 1px solid rgba(91, 108, 116, 0.15);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 16px 32px -28px rgba(31, 41, 51, 0.42);
+    }
+
+.stat-card,
+.mini-card,
+.link-card { padding: 18px; }
+
+.stat-label,
+.eyebrow {
+      display: block;
+      margin-bottom: 10px;
+      color: #68757e;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+.stat-value {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--ink);
+      font-weight: 800;
+      line-height: 1.08;
+    }
+
+.stat-value { font-size: 24px; }
+
+.stat-copy,
+.mini-card p,
+    .link-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+.story-callout {
+margin-top: 18px;
+padding: 18px;
+border: 1px solid rgba(86, 114, 103, 0.2);
+border-radius: 18px;
+background: var(--sage-soft);
+}
+
+.comparison-table td:first-child,
+.comparison-table th:first-child {
+width: auto;
+text-align: left;
+}
+
+.comparison-table td:nth-child(2),
+.comparison-table td:nth-child(3) {
+font-weight: 700;
+}
+
+    .month-card {
+      margin: 22px 0;
+      padding: 26px;
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .month-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .month-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid rgba(49, 95, 114, 0.14);
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #294f5f;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      margin: 0 0 18px;
+      border: 1px solid var(--line);
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--surface);
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: linear-gradient(180deg, #f4f7f7, #e9eef0);
+      color: #2d3b44;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    td:first-child,
+    th:first-child {
+      width: 52px;
+      text-align: center;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    tr:nth-child(even) td { background: #fbfcfc; }
+
+    a {
+      color: var(--accent);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #244b5d;
+      text-decoration: underline;
+    }
+
+    .section-intro {
+      max-width: 860px;
+      color: var(--muted);
+    }
+
+    ul {
+      margin: 0 0 20px;
+      padding-left: 22px;
+    }
+
+    li { margin: 5px 0; }
+
+@media (max-width: 900px) {
+.stat-grid,
+.work-grid,
+.link-grid,
+.month-head {
+grid-template-columns: 1fr;
+}
+}
+
+@media (max-width: 760px) {
+      .page {
+        width: min(100% - 24px, 1180px);
+        padding-top: 20px;
+      }
+
+      header,
+      section,
+      .month-card {
+        padding: 22px;
+        border-radius: 20px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      th,
+      td { min-width: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>Joe Rascal Ducati + Harley 6-Month Search Growth Roadmap</h1>
+      <p class="lede">The first half of 2026 built the SEO base: stronger collection pages, clearer navigation, better shopping visibility and cleaner paths into products. July to December now focuses on steady execution: 3 Ducati content pieces, 3 Harley content pieces, 1 supporting SEO task, and 1 link target for each site every month.</p>
+      <p class="note"><strong>Monthly rhythm:</strong> 6 content pieces, 2 link targets and 1 supporting SEO task, grouped together by month so the full workload is easy to see.</p>
+    </header>
+
+    <section>
+      <h2>Traffic And Revenue Momentum</h2>
+      <p class="section-intro">The cleanest story is the same for both sites: compare December to May for traffic, revenue and keyword growth. Ducati had the sharper traffic and keyword lift, while Harley had the larger traffic base and stronger revenue growth.</p>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-label">Ducati traffic</span>
+          <span class="stat-value">1,621 to 2,887</span>
+          <p class="stat-copy">Organic sessions from December to May, up 78.1%.</p>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Harley traffic</span>
+          <span class="stat-value">7,651 to 9,221</span>
+          <p class="stat-copy">Organic sessions from December to May, up 20.5%.</p>
+        </div>
+      </div>
+      <table class="comparison-table">
+        <thead><tr><th>Metric</th><th>Ducati Dec to May</th><th>Harley Dec to May</th></tr></thead>
+        <tbody>
+          <tr><td>Organic sessions</td><td>1,621 to 2,887 (+78.1%)</td><td>7,651 to 9,221 (+20.5%)</td></tr>
+          <tr><td>Organic revenue</td><td>A$3,587 to A$2,997 (-16.5%)</td><td>A$17,084 to A$19,166 (+12.2%)</td></tr>
+          <tr><td>Total keywords in top 10</td><td>15 to 69 (+54)</td><td>42 to 53 (+11)</td></tr>
+        </tbody>
+      </table>
+      <div class="story-callout">
+        <p><strong>What this means:</strong> Ducati visibility and traffic improved strongly, although May revenue was below December and June was already recovering by 17 June. Harley grew from a much larger base, with both traffic and revenue higher in May than December. The next roadmap should keep building pages that can turn those traffic and keyword gains into more product discovery and sales.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>The Story So Far</h2>
+      <p>Priority content has already been added across Ducati apparel, parts and ownership pages, plus Harley apparel, accessories, electrical, performance and riding gear pages. The next six months should focus on new pages rather than rewriting work that has already been completed.</p>
+      <p>The monthly plan below only includes pages that have not already had dedicated content work. Completed pages can still receive small improvements as part of regular maintenance, but they are not counted as new roadmap pages.</p>
+    </section>
+
+    <section>
+      <h2>Monthly Work Plan</h2>
+      <p class="section-intro">Each month now shows the full workload in one place: Ducati content, Harley content, supporting SEO work and the two link-building targets.</p>
+    </section>
+
+    <article class="month-card">
+      <div class="month-head">
+        <div>
+          <span class="eyebrow">July 2026</span>
+          <h3>Set the next growth phase</h3>
+          <p class="section-intro">Build the strongest model and bike pages first, then support them with product visibility work and balanced link building.</p>
+        </div>
+        <span class="month-badge">Support task: Google Shopping/product visibility check</span>
+      </div>
+      <div class="work-grid">
+        <div>
+          <h4>Ducati content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalducati.com.au/collections/scrambler">Scrambler</a></td><td>Ducati Scrambler</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalducati.com.au/collections/multistrada">Multistrada</a></td><td>Ducati Multistrada</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalducati.com.au/collections/diavel">Diavel</a></td><td>Ducati Diavel</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4>Harley content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalharley.com.au/collections/bikes">Bikes</a></td><td>Harley-Davidson bikes for sale</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalharley.com.au/collections/parts">Parts</a></td><td>Harley-Davidson parts</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalharley.com.au/collections/air-cleaners-kits">Air Cleaners &amp; Kits</a></td><td>Harley-Davidson air cleaners</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="link-grid">
+        <div class="link-card"><span class="eyebrow">Ducati link target</span><h4><a href="https://joerascalducati.com.au/collections/scrambler">Ducati Scrambler</a></h4><p>Suggested angle: local Ducati model guide.</p></div>
+        <div class="link-card"><span class="eyebrow">Harley link target</span><h4><a href="https://joerascalharley.com.au/collections/bikes">Harley Bikes</a></h4><p>Suggested angle: local Harley-Davidson buying guide.</p></div>
+      </div>
+    </article>
+
+    <article class="month-card">
+      <div class="month-head">
+        <div>
+          <span class="eyebrow">August 2026</span>
+          <h3>Build model discovery and performance pages</h3>
+          <p class="section-intro">Support high-interest Ducati model research and Harley performance/control upgrades.</p>
+        </div>
+        <span class="month-badge">Support task: Image alt text improvements</span>
+      </div>
+      <div class="work-grid">
+        <div>
+          <h4>Ducati content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalducati.com.au/collections/ducati-xdiavel-v4-joe-rascal-ducati">XDiavel V4</a></td><td>Ducati XDiavel</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalducati.com.au/collections/multistrada-models-joe-rascal-ducati">Multistrada Models</a></td><td>Ducati Multistrada models</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalducati.com.au/collections/scrambler-ducati-models-joe-rascal-ducati">Scrambler Models</a></td><td>Ducati Scrambler models</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4>Harley content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalharley.com.au/collections/air-filters-intakes">Air Filters &amp; Intakes</a></td><td>Harley-Davidson air filters</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalharley.com.au/collections/handlebars-controls">Handlebars &amp; Controls</a></td><td>Harley-Davidson handlebars</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalharley.com.au/collections/hand-grips-guards-throttle">Hand Grips, Guards &amp; Throttle</a></td><td>Harley-Davidson grips</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="link-grid">
+        <div class="link-card"><span class="eyebrow">Ducati link target</span><h4><a href="https://joerascalducati.com.au/collections/ducati-xdiavel-v4-joe-rascal-ducati">Ducati XDiavel V4</a></h4><p>Suggested angle: Ducati cruiser and performance model guide.</p></div>
+        <div class="link-card"><span class="eyebrow">Harley link target</span><h4><a href="https://joerascalharley.com.au/collections/air-cleaners-kits">Harley Air Cleaners &amp; Kits</a></h4><p>Suggested angle: Harley performance and upgrade guide.</p></div>
+      </div>
+    </article>
+
+    <article class="month-card">
+      <div class="month-head">
+        <div>
+          <span class="eyebrow">September 2026</span>
+          <h3>Strengthen rider gear and touring categories</h3>
+          <p class="section-intro">Pair practical Ducati gear pages with Harley touring, braking and lighting pages.</p>
+        </div>
+        <span class="month-badge">Support task: Content calendar planning</span>
+      </div>
+      <div class="work-grid">
+        <div>
+          <h4>Ducati content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalducati.com.au/collections/helmets">Helmets</a></td><td>Ducati helmets</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalducati.com.au/collections/boots">Boots</a></td><td>Ducati boots</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalducati.com.au/collections/gloves">Gloves</a></td><td>Ducati gloves</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4>Harley content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalharley.com.au/collections/windshields-screens">Windshields &amp; Screens</a></td><td>Harley-Davidson windshields</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalharley.com.au/collections/brake-pads-discs-drums">Brake Pads, Discs &amp; Drums</a></td><td>Harley-Davidson brake pads</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalharley.com.au/collections/lighting">Lighting</a></td><td>Harley-Davidson lighting</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="link-grid">
+        <div class="link-card"><span class="eyebrow">Ducati link target</span><h4><a href="https://joerascalducati.com.au/collections/helmets">Ducati Helmets</a></h4><p>Suggested angle: helmet selection and riding gear guide.</p></div>
+        <div class="link-card"><span class="eyebrow">Harley link target</span><h4><a href="https://joerascalharley.com.au/collections/parts">Harley Parts</a></h4><p>Suggested angle: high-demand Harley parts buying guide.</p></div>
+      </div>
+    </article>
+
+    <article class="month-card">
+      <div class="month-head">
+        <div>
+          <span class="eyebrow">October 2026</span>
+          <h3>Focus on parts, maintenance and performance</h3>
+          <p class="section-intro">Support parts pages with strong buying intent and make sure the new work is technically sound.</p>
+        </div>
+        <span class="month-badge">Support task: Technical QA</span>
+      </div>
+      <div class="work-grid">
+        <div>
+          <h4>Ducati content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalducati.com.au/collections/air-fuel">Air &amp; Fuel</a></td><td>Ducati air filters</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalducati.com.au/collections/braking">Braking</a></td><td>Ducati brakes</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalducati.com.au/collections/handlebars-levers-mirrors">Handlebars, Levers &amp; Mirrors</a></td><td>Ducati mirrors and controls</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4>Harley content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalharley.com.au/collections/oil-filters">Oil Filters</a></td><td>Harley-Davidson oil filters</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalharley.com.au/collections/fuel-air">Fuel &amp; Air</a></td><td>Harley-Davidson fuel and air parts</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalharley.com.au/collections/cams-cam-chest">Cams &amp; Cam Chest</a></td><td>Harley-Davidson cams</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="link-grid">
+        <div class="link-card"><span class="eyebrow">Ducati link target</span><h4><a href="https://joerascalducati.com.au/collections/braking">Ducati Braking</a></h4><p>Suggested angle: Ducati maintenance and braking guide.</p></div>
+        <div class="link-card"><span class="eyebrow">Harley link target</span><h4><a href="https://joerascalharley.com.au/collections/air-filters-intakes">Harley Air Filters &amp; Intakes</a></h4><p>Suggested angle: Harley air intake and performance upgrade guide.</p></div>
+      </div>
+    </article>
+
+    <article class="month-card">
+      <div class="month-head">
+        <div>
+          <span class="eyebrow">November 2026</span>
+          <h3>Prepare for summer riding and touring</h3>
+          <p class="section-intro">Add touring, care and comfort pages, then clean up navigation so shoppers can move between related pages more easily.</p>
+        </div>
+        <span class="month-badge">Support task: Menu navigation cleanup</span>
+      </div>
+      <div class="work-grid">
+        <div>
+          <h4>Ducati content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalducati.com.au/collections/drive-belt-chains">Drive Belt &amp; Chains</a></td><td>Ducati chains and belts</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalducati.com.au/collections/panniers-saddlebags">Panniers &amp; Saddlebags</a></td><td>Ducati panniers</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalducati.com.au/collections/seat-covers-seats">Seat Covers &amp; Seats</a></td><td>Ducati seats</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4>Harley content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalharley.com.au/collections/motorcycle-covers">Motorcycle Covers</a></td><td>Harley-Davidson motorcycle covers</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalharley.com.au/collections/tour-paks-luggage-racks">Tour-Paks &amp; Luggage Racks</a></td><td>Harley-Davidson Tour-Paks</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalharley.com.au/collections/bike-wash-care">Bike Wash &amp; Care</a></td><td>Harley-Davidson bike care</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="link-grid">
+        <div class="link-card"><span class="eyebrow">Ducati link target</span><h4><a href="https://joerascalducati.com.au/collections/panniers-saddlebags">Ducati Panniers &amp; Saddlebags</a></h4><p>Suggested angle: Ducati touring preparation.</p></div>
+        <div class="link-card"><span class="eyebrow">Harley link target</span><h4><a href="https://joerascalharley.com.au/collections/handlebars-controls">Harley Handlebars &amp; Controls</a></h4><p>Suggested angle: high-demand Harley handlebar and controls upgrade guide.</p></div>
+      </div>
+    </article>
+
+    <article class="month-card">
+      <div class="month-head">
+        <div>
+          <span class="eyebrow">December 2026</span>
+          <h3>Support holiday and summer demand</h3>
+          <p class="section-intro">Finish the six-month plan with seasonal ownership, gift, apparel and electronics pages, then review what should shape the next quarter.</p>
+        </div>
+        <span class="month-badge">Support task: Progress review and next-quarter priorities</span>
+      </div>
+      <div class="work-grid">
+        <div>
+          <h4>Ducati content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalducati.com.au/collections/screens-shields">Screens &amp; Shields</a></td><td>Ducati windscreens</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalducati.com.au/collections/oil-oil-filters">Oil &amp; Oil Filters</a></td><td>Ducati oil filters</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalducati.com.au/collections/gps-navigation">GPS &amp; Navigation</a></td><td>Ducati navigation mounts</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4>Harley content work</h4>
+          <table>
+            <thead><tr><th>#</th><th>New page</th><th>Customer search theme</th><th>Work planned</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><a href="https://joerascalharley.com.au/collections/gifts-collectables">Gifts &amp; Collectables</a></td><td>Harley-Davidson gifts</td><td>New page content</td></tr>
+              <tr><td>2</td><td><a href="https://joerascalharley.com.au/collections/casual-clothing">Casual Clothing</a></td><td>Harley-Davidson clothing</td><td>New page content</td></tr>
+              <tr><td>3</td><td><a href="https://joerascalharley.com.au/collections/audio-electronics">Audio &amp; Electronics</a></td><td>Harley-Davidson audio</td><td>New page content</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="link-grid">
+        <div class="link-card"><span class="eyebrow">Ducati link target</span><h4><a href="https://joerascalducati.com.au/collections/screens-shields">Ducati Screens &amp; Shields</a></h4><p>Suggested angle: summer touring comfort and ownership guide.</p></div>
+        <div class="link-card"><span class="eyebrow">Harley link target</span><h4><a href="https://joerascalharley.com.au/collections/gifts-collectables">Harley Gifts &amp; Collectables</a></h4><p>Suggested angle: high-demand Harley gifts and collectables guide.</p></div>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

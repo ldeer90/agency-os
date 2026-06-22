@@ -3123,6 +3123,35 @@ SELECT
   se_avg_position_delta
 FROM `{project}.{memory}.client_monthly_api_snapshots`
 """,
+        "client_collection_page_performance_history": f"""
+CREATE OR REPLACE TABLE `{project}.{reporting}.client_collection_page_performance_history`
+PARTITION BY month_start
+CLUSTER BY client_slug, page_type AS
+SELECT
+  period_id,
+  month_start,
+  month_end,
+  client_slug,
+  client_name,
+  page_path,
+  page_url,
+  page_type,
+  ga4_status,
+  gsc_status,
+  organic_sessions,
+  organic_users,
+  engaged_sessions,
+  organic_purchases,
+  organic_revenue,
+  organic_conversion_rate,
+  organic_aov,
+  gsc_clicks,
+  gsc_impressions,
+  gsc_ctr,
+  gsc_avg_position
+FROM `{project}.{memory}.client_monthly_page_api_snapshots`
+WHERE page_type = 'collection'
+""",
         "client_monthly_comparison": f"""
 CREATE OR REPLACE TABLE `{project}.{reporting}.client_monthly_comparison`
 PARTITION BY month_start

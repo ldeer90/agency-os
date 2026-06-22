@@ -360,6 +360,39 @@ CLIENT_MONTHLY_API_SNAPSHOTS_SCHEMA: list[SchemaTuple] = [
 ]
 
 
+CLIENT_MONTHLY_PAGE_API_SNAPSHOTS_SCHEMA: list[SchemaTuple] = [
+    ("ingested_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("period_id", "STRING", "REQUIRED"),
+    ("month_start", "DATE", "REQUIRED"),
+    ("month_end", "DATE", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("page_path", "STRING", "REQUIRED"),
+    ("page_url", "STRING", "NULLABLE"),
+    ("page_type", "STRING", "REQUIRED"),
+    ("ga4_property", "STRING", "NULLABLE"),
+    ("gsc_site_url", "STRING", "NULLABLE"),
+    ("ga4_status", "STRING", "REQUIRED"),
+    ("gsc_status", "STRING", "REQUIRED"),
+    ("organic_sessions", "FLOAT64", "NULLABLE"),
+    ("organic_users", "FLOAT64", "NULLABLE"),
+    ("engaged_sessions", "FLOAT64", "NULLABLE"),
+    ("organic_purchases", "FLOAT64", "NULLABLE"),
+    ("organic_revenue", "FLOAT64", "NULLABLE"),
+    ("organic_conversion_rate", "FLOAT64", "NULLABLE"),
+    ("organic_aov", "FLOAT64", "NULLABLE"),
+    ("gsc_clicks", "FLOAT64", "NULLABLE"),
+    ("gsc_impressions", "FLOAT64", "NULLABLE"),
+    ("gsc_ctr", "FLOAT64", "NULLABLE"),
+    ("gsc_avg_position", "FLOAT64", "NULLABLE"),
+    ("ga4_rows_returned", "INT64", "NULLABLE"),
+    ("gsc_rows_returned", "INT64", "NULLABLE"),
+    ("ga4_error", "STRING", "NULLABLE"),
+    ("gsc_error", "STRING", "NULLABLE"),
+]
+
+
 CLIENT_FINANCE_MONTHLY_SCHEMA: list[SchemaTuple] = [
     ("ingested_at", "TIMESTAMP", "REQUIRED"),
     ("run_id", "STRING", "REQUIRED"),
@@ -814,6 +847,31 @@ REPORTING_CLIENT_MONTHLY_PERFORMANCE_HISTORY_SCHEMA = [
 ]
 
 
+REPORTING_CLIENT_COLLECTION_PAGE_PERFORMANCE_HISTORY_SCHEMA = [
+    ("period_id", "STRING", "REQUIRED"),
+    ("month_start", "DATE", "REQUIRED"),
+    ("month_end", "DATE", "REQUIRED"),
+    ("client_slug", "STRING", "REQUIRED"),
+    ("client_name", "STRING", "REQUIRED"),
+    ("page_path", "STRING", "REQUIRED"),
+    ("page_url", "STRING", "NULLABLE"),
+    ("page_type", "STRING", "REQUIRED"),
+    ("ga4_status", "STRING", "REQUIRED"),
+    ("gsc_status", "STRING", "REQUIRED"),
+    ("organic_sessions", "FLOAT64", "NULLABLE"),
+    ("organic_users", "FLOAT64", "NULLABLE"),
+    ("engaged_sessions", "FLOAT64", "NULLABLE"),
+    ("organic_purchases", "FLOAT64", "NULLABLE"),
+    ("organic_revenue", "FLOAT64", "NULLABLE"),
+    ("organic_conversion_rate", "FLOAT64", "NULLABLE"),
+    ("organic_aov", "FLOAT64", "NULLABLE"),
+    ("gsc_clicks", "FLOAT64", "NULLABLE"),
+    ("gsc_impressions", "FLOAT64", "NULLABLE"),
+    ("gsc_ctr", "FLOAT64", "NULLABLE"),
+    ("gsc_avg_position", "FLOAT64", "NULLABLE"),
+]
+
+
 REPORTING_CLIENT_MONTHLY_COMPARISON_SCHEMA = [
     ("period_id", "STRING", "REQUIRED"),
     ("month_start", "DATE", "REQUIRED"),
@@ -1137,6 +1195,116 @@ REPORTING_CLIENT_CRAWL_COMPARISON_SCHEMA = [
     ("source_ref_hash", "STRING", "REQUIRED"),
 ]
 
+SALES_OPPORTUNITY_SITES_SCHEMA: list[SchemaTuple] = [
+    ("registered_at", "TIMESTAMP", "REQUIRED"),
+    ("updated_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("opportunity_slug", "STRING", "REQUIRED"),
+    ("business_name", "STRING", "REQUIRED"),
+    ("domain", "STRING", "REQUIRED"),
+    ("site_url", "STRING", "NULLABLE"),
+    ("status", "STRING", "REQUIRED"),
+    ("source", "STRING", "NULLABLE"),
+    ("owner", "STRING", "NULLABLE"),
+    ("market", "STRING", "REQUIRED"),
+    ("currency", "STRING", "REQUIRED"),
+    ("notes_summary", "STRING", "NULLABLE"),
+    ("registry_path", "STRING", "REQUIRED"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
+SALES_OPPORTUNITY_SEO_SNAPSHOTS_SCHEMA: list[SchemaTuple] = [
+    ("snapshot_id", "STRING", "REQUIRED"),
+    ("snapshot_date", "DATE", "REQUIRED"),
+    ("quarter_id", "STRING", "REQUIRED"),
+    ("quarter_start", "DATE", "REQUIRED"),
+    ("quarter_end", "DATE", "REQUIRED"),
+    ("ingested_at", "TIMESTAMP", "REQUIRED"),
+    ("run_id", "STRING", "REQUIRED"),
+    ("opportunity_slug", "STRING", "REQUIRED"),
+    ("business_name", "STRING", "REQUIRED"),
+    ("domain", "STRING", "REQUIRED"),
+    ("status", "STRING", "REQUIRED"),
+    ("market", "STRING", "REQUIRED"),
+    ("currency", "STRING", "REQUIRED"),
+    ("se_ranking_status", "STRING", "REQUIRED"),
+    ("se_ranking_source", "STRING", "REQUIRED"),
+    ("se_ranking_retrieved_at", "TIMESTAMP", "NULLABLE"),
+    ("estimated_organic_traffic", "INT64", "NULLABLE"),
+    ("organic_keywords_count", "INT64", "NULLABLE"),
+    ("organic_traffic_value", "FLOAT64", "NULLABLE"),
+    ("organic_keywords_new_count", "INT64", "NULLABLE"),
+    ("organic_keywords_up_count", "INT64", "NULLABLE"),
+    ("organic_keywords_down_count", "INT64", "NULLABLE"),
+    ("organic_keywords_equal_count", "INT64", "NULLABLE"),
+    ("organic_keywords_lost_count", "INT64", "NULLABLE"),
+    ("organic_top1_5", "INT64", "NULLABLE"),
+    ("organic_top6_10", "INT64", "NULLABLE"),
+    ("organic_top11_20", "INT64", "NULLABLE"),
+    ("organic_top21_50", "INT64", "NULLABLE"),
+    ("organic_top51_100", "INT64", "NULLABLE"),
+    ("referring_domains", "INT64", "NULLABLE"),
+    ("backlinks", "INT64", "NULLABLE"),
+    ("dofollow_backlinks", "INT64", "NULLABLE"),
+    ("nofollow_backlinks", "INT64", "NULLABLE"),
+    ("domain_inlink_rank", "INT64", "NULLABLE"),
+    ("pages_with_backlinks", "INT64", "NULLABLE"),
+    ("crawl_id", "STRING", "NULLABLE"),
+    ("previous_crawl_id", "STRING", "NULLABLE"),
+    ("crawl_status", "STRING", "NULLABLE"),
+    ("pages_crawled", "INT64", "NULLABLE"),
+    ("missing_title_urls", "INT64", "NULLABLE"),
+    ("duplicate_title_urls", "INT64", "NULLABLE"),
+    ("missing_meta_description_urls", "INT64", "NULLABLE"),
+    ("missing_h1_urls", "INT64", "NULLABLE"),
+    ("crawl_url_snapshot_rows", "INT64", "NULLABLE"),
+    ("title_changed_urls", "INT64", "NULLABLE"),
+    ("metadata_json", "JSON", "NULLABLE"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+    ("error_class", "STRING", "NULLABLE"),
+    ("error_message", "STRING", "NULLABLE"),
+]
+
+REPORTING_SALES_OPPORTUNITY_QUARTERLY_COMPARISON_SCHEMA: list[SchemaTuple] = [
+    ("quarter_id", "STRING", "REQUIRED"),
+    ("snapshot_date", "DATE", "REQUIRED"),
+    ("opportunity_slug", "STRING", "REQUIRED"),
+    ("business_name", "STRING", "REQUIRED"),
+    ("domain", "STRING", "REQUIRED"),
+    ("status", "STRING", "REQUIRED"),
+    ("market", "STRING", "REQUIRED"),
+    ("currency", "STRING", "REQUIRED"),
+    ("estimated_organic_traffic", "INT64", "NULLABLE"),
+    ("estimated_organic_traffic_delta", "INT64", "NULLABLE"),
+    ("estimated_organic_traffic_pct", "FLOAT64", "NULLABLE"),
+    ("organic_keywords_count", "INT64", "NULLABLE"),
+    ("organic_keywords_count_delta", "INT64", "NULLABLE"),
+    ("organic_keywords_count_pct", "FLOAT64", "NULLABLE"),
+    ("referring_domains", "INT64", "NULLABLE"),
+    ("referring_domains_delta", "INT64", "NULLABLE"),
+    ("referring_domains_pct", "FLOAT64", "NULLABLE"),
+    ("backlinks", "INT64", "NULLABLE"),
+    ("backlinks_delta", "INT64", "NULLABLE"),
+    ("backlinks_pct", "FLOAT64", "NULLABLE"),
+    ("crawl_id", "STRING", "NULLABLE"),
+    ("previous_crawl_id", "STRING", "NULLABLE"),
+    ("pages_crawled", "INT64", "NULLABLE"),
+    ("pages_crawled_delta", "INT64", "NULLABLE"),
+    ("missing_title_urls", "INT64", "NULLABLE"),
+    ("missing_title_urls_delta", "INT64", "NULLABLE"),
+    ("duplicate_title_urls", "INT64", "NULLABLE"),
+    ("duplicate_title_urls_delta", "INT64", "NULLABLE"),
+    ("missing_meta_description_urls", "INT64", "NULLABLE"),
+    ("missing_meta_description_urls_delta", "INT64", "NULLABLE"),
+    ("missing_h1_urls", "INT64", "NULLABLE"),
+    ("missing_h1_urls_delta", "INT64", "NULLABLE"),
+    ("crawl_url_snapshot_rows", "INT64", "NULLABLE"),
+    ("title_changed_urls", "INT64", "NULLABLE"),
+    ("comparison_status", "STRING", "REQUIRED"),
+    ("se_ranking_status", "STRING", "REQUIRED"),
+    ("source_ref_hash", "STRING", "REQUIRED"),
+]
+
 
 AGENT_RUN_LOG_SCHEMA: list[SchemaTuple] = [
     ("run_id", "STRING", "REQUIRED"),
@@ -1435,6 +1603,32 @@ def crawl_memory_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
     ]
 
 
+def sales_opportunity_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
+    return [
+        TableSpec(
+            config.memory_dataset,
+            "sales_opportunity_sites",
+            SALES_OPPORTUNITY_SITES_SCHEMA,
+            partition_field="registered_at",
+            cluster_fields=("opportunity_slug", "status", "domain"),
+        ),
+        TableSpec(
+            config.memory_dataset,
+            "sales_opportunity_seo_snapshots",
+            SALES_OPPORTUNITY_SEO_SNAPSHOTS_SCHEMA,
+            partition_field="snapshot_date",
+            cluster_fields=("opportunity_slug", "quarter_id", "status"),
+        ),
+        TableSpec(
+            config.reporting_dataset,
+            "sales_opportunity_quarterly_comparison",
+            REPORTING_SALES_OPPORTUNITY_QUARTERLY_COMPARISON_SCHEMA,
+            partition_field="snapshot_date",
+            cluster_fields=("opportunity_slug", "quarter_id", "comparison_status"),
+        ),
+    ]
+
+
 def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
     return [
         *control_table_specs(config),
@@ -1468,16 +1662,23 @@ def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
         TableSpec(config.memory_dataset, "task_alignment", TASK_ALIGNMENT_SCHEMA, partition_field="snapshot_date"),
         TableSpec(config.memory_dataset, "client_timeline_events", CLIENT_TIMELINE_EVENTS_SCHEMA, cluster_fields=("client_slug",)),
         TableSpec(config.memory_dataset, "monthly_report_snapshots", MONTHLY_REPORT_SNAPSHOTS_SCHEMA, cluster_fields=("client_slug",)),
-        TableSpec(
-            config.memory_dataset,
-            "client_monthly_api_snapshots",
-            CLIENT_MONTHLY_API_SNAPSHOTS_SCHEMA,
-            partition_field="month_start",
-            cluster_fields=("client_slug",),
-        ),
-        TableSpec(
-            config.memory_dataset,
-            "client_finance_monthly",
+    TableSpec(
+        config.memory_dataset,
+        "client_monthly_api_snapshots",
+        CLIENT_MONTHLY_API_SNAPSHOTS_SCHEMA,
+        partition_field="month_start",
+        cluster_fields=("client_slug",),
+    ),
+    TableSpec(
+        config.memory_dataset,
+        "client_monthly_page_api_snapshots",
+        CLIENT_MONTHLY_PAGE_API_SNAPSHOTS_SCHEMA,
+        partition_field="month_start",
+        cluster_fields=("client_slug", "page_type"),
+    ),
+    TableSpec(
+        config.memory_dataset,
+        "client_finance_monthly",
             CLIENT_FINANCE_MONTHLY_SCHEMA,
             partition_field="month_start",
             cluster_fields=("client_slug", "billing_status"),
@@ -1649,6 +1850,7 @@ def agency_ops_table_specs(config: BigQueryCostConfig) -> list[TableSpec]:
             partition_field="current_crawl_date",
             cluster_fields=("client_slug", "comparison_status"),
         ),
+        *sales_opportunity_table_specs(config),
     ]
 
 
@@ -1677,6 +1879,11 @@ def plan_crawl_memory_tables(client: Any, config: BigQueryCostConfig) -> list[di
     return plan_tables(client, config, crawl_memory_table_specs(config))
 
 
+def plan_sales_opportunity_tables(client: Any, config: BigQueryCostConfig) -> list[dict[str, Any]]:
+    """Return a non-mutating plan for sales opportunity snapshot tables."""
+    return plan_tables(client, config, sales_opportunity_table_specs(config))
+
+
 def ensure_monthly_api_snapshot_tables(client: Any, config: BigQueryCostConfig) -> None:
     """Create the live monthly API snapshot and reporting-history tables."""
     ensure_tables(
@@ -1691,11 +1898,25 @@ def ensure_monthly_api_snapshot_tables(client: Any, config: BigQueryCostConfig) 
                 cluster_fields=("client_slug",),
             ),
             TableSpec(
+                config.memory_dataset,
+                "client_monthly_page_api_snapshots",
+                CLIENT_MONTHLY_PAGE_API_SNAPSHOTS_SCHEMA,
+                partition_field="month_start",
+                cluster_fields=("client_slug", "page_type"),
+            ),
+            TableSpec(
                 config.reporting_dataset,
                 "client_monthly_performance_history",
                 REPORTING_CLIENT_MONTHLY_PERFORMANCE_HISTORY_SCHEMA,
                 partition_field="month_start",
                 cluster_fields=("client_slug",),
+            ),
+            TableSpec(
+                config.reporting_dataset,
+                "client_collection_page_performance_history",
+                REPORTING_CLIENT_COLLECTION_PAGE_PERFORMANCE_HISTORY_SCHEMA,
+                partition_field="month_start",
+                cluster_fields=("client_slug", "page_type"),
             ),
         ],
     )
@@ -1809,6 +2030,11 @@ def ensure_finance_memory_tables(client: Any, config: BigQueryCostConfig) -> Non
 def ensure_crawl_memory_tables(client: Any, config: BigQueryCostConfig) -> None:
     """Create the technical crawl memory and comparison tables."""
     ensure_tables(client, config, crawl_memory_table_specs(config))
+
+
+def ensure_sales_opportunity_tables(client: Any, config: BigQueryCostConfig) -> None:
+    """Create sales opportunity SEO snapshot and comparison tables."""
+    ensure_tables(client, config, sales_opportunity_table_specs(config))
 
 
 def ensure_agency_ops_tables(client: Any, config: BigQueryCostConfig) -> None:

@@ -116,6 +116,36 @@ Token usage by prompt:
   --sql "SELECT prompt_version, agent_id, model, COUNT(*) AS calls, SUM(input_tokens) AS input_tokens, SUM(output_tokens) AS output_tokens, SUM(COALESCE(input_tokens, 0) + COALESCE(output_tokens, 0)) AS total_tokens, SUM(cost_estimate_aud) AS cost_estimate_aud FROM \`seo-agency-work.agency_control.llm_usage_log\` GROUP BY prompt_version, agent_id, model ORDER BY total_tokens DESC"
 ```
 
+## Codex Usage Review
+
+Codex App tracing is configured separately through the project-local `.codex` plugin config. It is for observing Codex turn/session cost, not durable agency-memory data. Keep it metadata-only by default so token/cost visibility remains available without storing prompt or tool payloads.
+
+Default project posture:
+
+- tracing enabled for token/cost observability
+- payload capture disabled or minimized
+- `max_chars` set to `1`, the smallest value accepted by the Codex observability plugin
+- tags preserved: `agency-os`, `codex-app`, `local-dev`, `token-usage`
+
+Temporarily raise payload capture only for approved debugging, and lower it again after the specific investigation. For beginner-friendly usage review of Codex token spend, agent/task grouping, duplicate trace candidates, and inefficiency flags, use:
+
+```bash
+.venv/bin/python scripts/langfuse_agencyos_usage_report.py --days 7
+```
+
+Use `--include-io` only when raw observation input/output fields have been approved for debugging. Use `--no-write` for terminal-only previews.
+
+See `docs/AGENCYOS_LANGFUSE_USAGE.md` for the recommended `agent=... task=...` prompt convention and how to read the report.
+
+
+### Duplicate Trace Diagnosis
+
+Duplicate trace candidates in the Codex usage report are advisory diagnosis signals. When two or more traces have the same observation count, token totals, and cost shape, report both gross cost and likely unique cost, then check whether the Codex App tracing layer is emitting the same turn more than once. Do not assume duplicate candidates are unique model work without further review.
+
+If a session is input-heavy, prefer a fresh handoff turn over continuing the same large context. The handoff should keep quality intact by carrying goal, changed files, open decisions, verification status, and the next command, not by dropping required tests or safety checks.
+
+After a workflow is validated, route future runs through the most specific skill or runbook before inspecting source code again. Use workflow classes and skill-template sections in `docs/AGENCYOS_LANGFUSE_USAGE.md` to preserve verification while reducing repeated setup reads, tool loops, and polling.
+
 ## BigQuery Export Notes
 
 Langfuse exports for warehouse-scale analysis should use Langfuse's blob-storage export feature, then load from GCS into BigQuery using this repo's normal capped-query and load-review process. Do not bypass this project's BigQuery cost guardrails for exploratory trace analysis.

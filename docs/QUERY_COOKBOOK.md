@@ -57,34 +57,76 @@ For one client:
 
 ## Monthly Performance Comparison
 
+Intent gate before querying:
+
+- Resolve scope: one client or all clients.
+- Resolve metrics: sessions, organic revenue, GSC clicks, visibility, AI sessions, or a narrow combination.
+- Resolve period: default to the latest complete loaded month unless Laurence explicitly asks for partial month-to-date.
+- Check freshness first. The 13-month comparison layer normally excludes the current partial month.
+- Use `--load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env"` instead of manually sourcing `.env`.
+- Prefer single-quoted `--sql` arguments, a `--sql-file`, or stdin for BigQuery SQL. Do not put BigQuery backtick table names inside a double-quoted shell string.
+
+Latest available comparison periods:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env" \
+  --purpose "agent question: latest available client monthly comparison periods" \
+  --limit-preview 10 \
+  --sql 'SELECT period_id, month_start, COUNT(*) AS client_rows, COUNTIF(organic_sessions IS NOT NULL) AS sessions_rows, COUNTIF(organic_revenue IS NOT NULL) AS revenue_rows FROM `seo-agency-work.agency_reporting.client_monthly_comparison` GROUP BY period_id, month_start ORDER BY month_start DESC LIMIT 6'
+```
+
 Latest month by client:
 
 ```bash
 .venv/bin/python scripts/bq_capped_query.py \
+  --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env" \
   --purpose "agent question: latest monthly performance by client" \
   --limit-preview 50 \
-  --sql "SELECT client_slug, client_name, period_id, organic_sessions, organic_revenue, gsc_clicks, se_visibility_end FROM \`seo-agency-work.agency_reporting.client_monthly_performance_history\` QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY month_start DESC) = 1 ORDER BY client_slug"
+  --sql 'SELECT client_slug, client_name, period_id, organic_sessions, organic_revenue, gsc_clicks, se_visibility_end, source_health FROM `seo-agency-work.agency_reporting.client_monthly_performance_history` QUALIFY ROW_NUMBER() OVER (PARTITION BY client_slug ORDER BY month_start DESC) = 1 ORDER BY client_slug'
 ```
 
 Month-over-month and year-over-year comparison for one client:
 
 ```bash
 .venv/bin/python scripts/bq_capped_query.py \
+  --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env" \
   --purpose "agent question: performance comparison for shop-rongrong" \
   --limit-preview 13 \
-  --sql "SELECT client_slug, period_id, organic_sessions, organic_sessions_mom_delta, organic_sessions_yoy_delta, gsc_clicks, gsc_clicks_mom_delta, gsc_clicks_yoy_delta, organic_revenue, organic_revenue_mom_delta, organic_revenue_yoy_delta FROM \`seo-agency-work.agency_reporting.client_monthly_comparison\` WHERE client_slug = 'shop-rongrong' ORDER BY month_start DESC LIMIT 13"
+  --sql 'SELECT client_slug, client_name, period_id, organic_sessions, organic_sessions_mom_delta, organic_sessions_mom_pct, organic_sessions_yoy_delta, gsc_clicks, gsc_clicks_mom_delta, gsc_clicks_yoy_delta, organic_revenue, organic_revenue_mom_delta, organic_revenue_mom_pct, organic_revenue_yoy_delta, source_health FROM `seo-agency-work.agency_reporting.client_monthly_comparison` WHERE client_slug = "shop-rongrong" ORDER BY month_start DESC LIMIT 13'
 ```
 
-All-client organic sessions direction for a month-over-month question, such as April 2026 to May 2026:
+All-client organic sessions and revenue MoM for the latest complete loaded month:
 
 ```bash
 .venv/bin/python scripts/bq_capped_query.py \
-  --purpose "agent question: answer April to May 2026 client organic sessions direction" \
+  --load-env "/Users/laurencedeer/Projects/Codex/SEO Automation/.env" \
+  --purpose "agent question: all clients latest mom organic sessions and revenue comparison" \
   --limit-preview 50 \
-  --sql "SELECT client_slug, client_name, CAST(ROUND(organic_sessions - organic_sessions_mom_delta) AS INT64) AS april_sessions, CAST(ROUND(organic_sessions) AS INT64) AS may_sessions, CAST(ROUND(organic_sessions_mom_delta) AS INT64) AS session_change, ROUND(organic_sessions_mom_pct * 100, 1) AS session_change_pct, CASE WHEN organic_sessions_mom_delta > 0 THEN 'up' WHEN organic_sessions_mom_delta < 0 THEN 'down' WHEN organic_sessions_mom_delta = 0 THEN 'flat' ELSE 'unknown' END AS direction, source_health FROM \`seo-agency-work.agency_reporting.client_monthly_comparison\` WHERE period_id = '2026-05' ORDER BY direction DESC, session_change DESC, client_slug"
+  --sql 'WITH latest AS (SELECT * FROM `seo-agency-work.agency_reporting.client_monthly_comparison` WHERE month_start = (SELECT MAX(month_start) FROM `seo-agency-work.agency_reporting.client_monthly_comparison`)) SELECT client_slug, client_name, period_id AS current_period, FORMAT_DATE("%Y-%m", DATE_SUB(month_start, INTERVAL 1 MONTH)) AS previous_period, CAST(ROUND(organic_sessions - organic_sessions_mom_delta) AS INT64) AS previous_sessions, CAST(ROUND(organic_sessions) AS INT64) AS current_sessions, CAST(ROUND(organic_sessions_mom_delta) AS INT64) AS sessions_delta, ROUND(organic_sessions_mom_pct * 100, 1) AS sessions_mom_pct, ROUND(organic_revenue - organic_revenue_mom_delta, 2) AS previous_organic_revenue, ROUND(organic_revenue, 2) AS current_organic_revenue, ROUND(organic_revenue_mom_delta, 2) AS revenue_delta, ROUND(organic_revenue_mom_pct * 100, 1) AS revenue_mom_pct, source_health FROM latest ORDER BY sessions_delta DESC, client_slug'
 ```
 
 For other month pairs, set `period_id` to the later month and rename the derived previous/current aliases. The comparison table stores current values plus MoM deltas, so derive the previous month as `current_metric - metric_mom_delta`.
+
+## Collection Page Performance Trend
+
+Collection-page performance is stored monthly, not daily, in `agency_reporting.client_collection_page_performance_history`. Use this for efficient 3/6/12-month collection trend checks.
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: six month collection page trend shop-rongrong" \
+  --limit-preview 100 \
+  --sql "SELECT period_id, client_slug, page_path, page_url, organic_sessions, organic_revenue, gsc_clicks, gsc_impressions, gsc_ctr, gsc_avg_position FROM \`seo-agency-work.agency_reporting.client_collection_page_performance_history\` WHERE client_slug = 'shop-rongrong' AND month_start >= DATE_SUB((SELECT MAX(month_start) FROM \`seo-agency-work.agency_reporting.client_collection_page_performance_history\` WHERE client_slug = 'shop-rongrong'), INTERVAL 5 MONTH) ORDER BY page_path, month_start"
+```
+
+Top collection movers by GSC clicks over latest six months:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: collection page click movers shop-rongrong" \
+  --limit-preview 50 \
+  --sql "WITH recent AS (SELECT * FROM \`seo-agency-work.agency_reporting.client_collection_page_performance_history\` WHERE client_slug = 'shop-rongrong' AND month_start >= DATE_SUB((SELECT MAX(month_start) FROM \`seo-agency-work.agency_reporting.client_collection_page_performance_history\` WHERE client_slug = 'shop-rongrong'), INTERVAL 5 MONTH)), ranked AS (SELECT *, FIRST_VALUE(gsc_clicks) OVER page_month AS first_clicks, LAST_VALUE(gsc_clicks) OVER page_month AS latest_clicks FROM recent WINDOW page_month AS (PARTITION BY page_path ORDER BY month_start ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)) SELECT page_path, ANY_VALUE(page_url) AS page_url, MIN(period_id) AS first_month, MAX(period_id) AS latest_month, MAX(first_clicks) AS first_clicks, MAX(latest_clicks) AS latest_clicks, MAX(latest_clicks) - MAX(first_clicks) AS click_delta, SUM(gsc_clicks) AS six_month_clicks, SUM(organic_sessions) AS six_month_organic_sessions, SUM(organic_revenue) AS six_month_organic_revenue FROM ranked GROUP BY page_path ORDER BY click_delta ASC, six_month_clicks DESC LIMIT 50"
+```
 
 Trailing totals:
 
@@ -267,6 +309,17 @@ Latest ingestion runs:
   --sql "SELECT run_id, source_id, status, started_at, completed_at, destination_table, rows_loaded, error_message FROM \`seo-agency-work.agency_control.ingestion_runs\` ORDER BY started_at DESC LIMIT 25"
 ```
 
+Schema note for automation verification: `agency_control.ingestion_runs` uses `source_path`, not `source_name`. Use `source_id`, `source_path`, `destination_table`, and `rows_loaded` when summarizing a reflection run.
+
+Latest run row counts by destination:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+--purpose "agent check: latest agency ingestion destination counts" \
+--limit-preview 30 \
+--sql "WITH latest AS (SELECT run_id FROM \`seo-agency-work.agency_control.ingestion_runs\` ORDER BY started_at DESC LIMIT 1) SELECT destination_table, SUM(rows_loaded) AS rows_loaded, COUNT(*) AS entries, MIN(started_at) AS started_at, MAX(completed_at) AS completed_at, ARRAY_AGG(DISTINCT status IGNORE NULLS) AS statuses FROM \`seo-agency-work.agency_control.ingestion_runs\` WHERE run_id = (SELECT run_id FROM latest) GROUP BY destination_table ORDER BY destination_table"
+```
+
 Client finance health:
 
 ```bash
@@ -296,6 +349,41 @@ Latest cost checks:
   --sql "SELECT logged_at, purpose, status, estimated_bytes, cap_bytes, job_id FROM \`seo-agency-work.agency_control.cost_checks\` ORDER BY logged_at DESC LIMIT 25"
 ```
 
+Schema note for cost verification: `agency_control.cost_checks` uses `logged_at`, not `created_at` or `check_time`.
+
+Recent cost-check aggregate:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+--purpose "agent check: recent cost guardrail status" \
+--limit-preview 20 \
+--sql "SELECT status, COUNT(*) AS checks, MAX(estimated_bytes) AS max_estimated_bytes, MAX(logged_at) AS latest_logged_at FROM \`seo-agency-work.agency_control.cost_checks\` WHERE logged_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 6 HOUR) GROUP BY status ORDER BY status"
+```
+
+## Sales Opportunity SEO Snapshots
+
+Quarterly lead/lost-sales comparison rows from SE Ranking estimates and approved Screaming Frog crawl IDs:
+
+```bash
+.venv/bin/python scripts/bq_capped_query.py \
+  --purpose "agent question: sales opportunity quarterly seo comparison" \
+  --limit-preview 50 \
+  --sql "SELECT quarter_id, opportunity_slug, business_name, domain, status, estimated_organic_traffic, estimated_organic_traffic_delta, organic_keywords_count, organic_keywords_count_delta, referring_domains, referring_domains_delta, crawl_id, previous_crawl_id, title_changed_urls, comparison_status FROM \`seo-agency-work.agency_reporting.sales_opportunity_quarterly_comparison\` ORDER BY snapshot_date DESC, opportunity_slug LIMIT 50"
+```
+
+Dry-run a local snapshot from a saved SE Ranking export before any BigQuery write:
+
+```bash
+.venv/bin/python scripts/load_sales_opportunity_snapshots.py \
+  --registry data/sales_opportunities/sites.json \
+  --opportunity example-slug \
+  --quarter 2026-Q2 \
+  --se-ranking-json /path/to/se-ranking-export.json \
+  --dry-run
+```
+
+Sales opportunity memory stores domain-level estimates, backlink counts, and crawl IDs only. Do not store raw sales notes, raw HTML, page text, screenshots, or raw Screaming Frog archives in BigQuery.
+
 ## Safety Notes
 
 - Do not query raw staging tables for routine agent answers.
@@ -303,3 +391,17 @@ Latest cost checks:
 - Keep `--limit-preview` low.
 - Do not add `--admin-cap-10gb` unless Laurence explicitly approves a broader query.
 - Do not use these queries to retrieve raw Drive, Docs, email, Monday updates, comments, or item descriptions.
+
+## Agent Signage Audit
+
+Run this read-only local audit when agent-facing Markdown, prompt files, or schema signage changes:
+
+```bash
+.venv/bin/python scripts/audit_agent_signage.py
+```
+
+Write a JSON report under `reports/system_admin/` only when a durable handoff artifact is useful:
+
+```bash
+.venv/bin/python scripts/audit_agent_signage.py --write-report
+```
